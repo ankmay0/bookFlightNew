@@ -23,7 +23,7 @@ const BookingSuccess: React.FC = () => {
   const data = (location.state as any) ?? {};
 
   useEffect(() => {
-    if (!data.orderId) {
+    if (!data.bookingData?.orderId) {
       navigate("/");
       return;
     }
@@ -41,8 +41,8 @@ const BookingSuccess: React.FC = () => {
       const conf = document.createElement("div");
       conf.style.position = "absolute";
       conf.style.left = Math.random() * 100 + "vw";
-      conf.style.width = "10px"; // SMALLER confetti
-      conf.style.height = "10px"; // SMALLER confetti
+      conf.style.width = "10px";
+      conf.style.height = "10px";
       conf.style.background = confettiColors[i % confettiColors.length];
       conf.style.opacity = "0.88";
       conf.style.borderRadius = "2px";
@@ -56,18 +56,19 @@ const BookingSuccess: React.FC = () => {
     return () => {
       if (confettiContainer) confettiContainer.innerHTML = "";
     };
-  }, [data.orderId, navigate]);
+  }, [data.bookingData?.orderId, navigate]);
 
-  if (!data.orderId) return null;
+  if (!data.bookingData?.orderId) return null;
 
-  const traveler = data.travelers?.[0] || {};
-  const flightOffer = data.flightOffer || {};
-  const trip = flightOffer.trips?.[0] || {};
+  const traveler = data.passengers?.[0] || {};
+  const passengers = data.passengers || [];
+  const flight = data.flight || {};
+  const trip = flight.trips?.[0] || {};
   const legs = trip.legs || [];
+  const contact = data.contact || {};
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", position: "relative" }}>
-      {/* Confetti Layer */}
       <Box
         ref={confettiRef}
         sx={{
@@ -89,7 +90,6 @@ const BookingSuccess: React.FC = () => {
           }}
         >
           <Grid container spacing={4} alignItems="flex-start">
-            {/* Left Side - Tick Animation */}
             <Grid item xs={12} sm={3} sx={{ textAlign: "center" }}>
               <Box
                 component="svg"
@@ -130,10 +130,8 @@ const BookingSuccess: React.FC = () => {
               </Box>
             </Grid>
 
-            {/* Right Side - All Information */}
             <Grid item xs={12} sm={9}>
               <Stack spacing={2}>
-                {/* Header */}
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="#10b981" sx={{ mb: 1 }}>
                     Flight Booked! ✈️
@@ -143,7 +141,6 @@ const BookingSuccess: React.FC = () => {
                   </Typography>
                 </Box>
 
-                {/* Booking Reference */}
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
                     Booking Reference
@@ -159,7 +156,7 @@ const BookingSuccess: React.FC = () => {
                       mb: 1,
                     }}
                   >
-                    {data.orderId ? decodeURIComponent(data.orderId) : "N/A"}
+                    {data.bookingData.orderId ? decodeURIComponent(data.bookingData.orderId) : "N/A"}
                   </Typography>
                 </Box>
 
@@ -173,20 +170,23 @@ const BookingSuccess: React.FC = () => {
                         Passenger Details
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Name:</strong> {traveler.firstName || ''} {traveler.lastName || ''}
+                        <strong>Name:</strong> {traveler.title || ''} {traveler.firstName || ''} {traveler.lastName || ''}
                       </Typography>
                       <Typography variant="body2">
-                        <strong>DOB:</strong> {traveler.dateOfBirth || 'N/A'}
+                        <strong>DOB:</strong> {traveler.dob || 'N/A'}
                       </Typography>
                       <Typography variant="body2">
                         <strong>Gender:</strong> {traveler.gender || 'N/A'}
                       </Typography>
-                      {traveler.phones?.[0] && (
+                      {contact.phone && (
                         <Typography variant="body2">
                           <PhoneIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle" }} />
-                          +{traveler.phones.countryCallingCode || ''} {traveler.phones.number || ''}
+                          {contact.countryCode || ''} {contact.phone || ''}
                         </Typography>
                       )}
+                      <Typography variant="body2">
+                        <strong>Email:</strong> {contact.email || 'N/A'}
+                      </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -215,7 +215,8 @@ const BookingSuccess: React.FC = () => {
                                 <strong>
                                   {leg.departureDateTime
                                     ? new Date(leg.departureDateTime).toLocaleTimeString([], {
-                                        hour: "2-digit", minute: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
                                       })
                                     : 'N/A'}
                                 </strong> {leg.departureAirport || 'N/A'}
@@ -227,7 +228,8 @@ const BookingSuccess: React.FC = () => {
                                 <strong>
                                   {leg.arrivalDateTime
                                     ? new Date(leg.arrivalDateTime).toLocaleTimeString([], {
-                                        hour: "2-digit", minute: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
                                       })
                                     : 'N/A'}
                                 </strong> {leg.arrivalAirport || 'N/A'}
@@ -254,7 +256,7 @@ const BookingSuccess: React.FC = () => {
                     Total Paid
                   </Typography>
                   <Typography variant="h5" fontWeight={700} color="#10b981">
-                    ₹{flightOffer.totalPrice || "N/A"}
+                    ₹{(flight.totalPrice && passengers.length) ? (parseFloat(flight.totalPrice) * passengers.length).toFixed(2) : "N/A"}
                   </Typography>
                 </Stack>
 
@@ -282,7 +284,6 @@ const BookingSuccess: React.FC = () => {
         </Paper>
       </Container>
 
-      {/* CSS Animations */}
       <style>
         {`
         @keyframes fallConfetti {
