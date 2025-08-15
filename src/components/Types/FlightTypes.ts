@@ -32,17 +32,35 @@ export interface Flight {
     pricingAdditionalInfo?: string;
 }
 
-export type LocationState = {
-  from: string;
-  to: string;
-  departDate: string;
-  passengers: number;
-  returnDate?: string;
-  adults: number;
-  children: number;
-};
+export interface Passenger {
+    title: string;
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: string;
+    passport: string;
+}
 
+export interface Contact {
+    email: string;
+    phone: string;
+    countryCode: string;
+}
 
+export interface Errors {
+    passengers: Array<{ firstName: string; lastName: string; dob: string; gender: string }>;
+    contact: { email: string; phone: string; countryCode: string };
+}
+
+export interface LocationState {
+    from: string;
+    to: string;
+    departDate: string;
+    passengers: number;
+    returnDate?: string;
+    adults: number;
+    children: number;
+}
 
 export interface SidebarFiltersProps {
     priceRange: number[];

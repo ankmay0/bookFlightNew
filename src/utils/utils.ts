@@ -146,3 +146,35 @@ export const createDebouncedFetcher = (
 ) => {
   return debounce(fetcher, delay);
 };
+
+
+export const formatPrice = (price: number | string): string => {
+    const numPrice = typeof price === "string" ? parseFloat(price) : price;
+    return `₹${numPrice.toFixed(2)}`;
+};
+
+export const formatTime = (dateTime: string): string => {
+    return new Date(dateTime).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+export const formatDate = (dateTime: string): string => {
+    return new Date(dateTime).toLocaleDateString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+    });
+};
+
+export const calculateFlightDuration = (legs: Array<{ departureDateTime: string; arrivalDateTime: string }>): string => {
+    const totalDurationMs = legs.reduce((total, leg) => {
+        const departure = new Date(leg.departureDateTime).getTime();
+        const arrival = new Date(leg.arrivalDateTime).getTime();
+        return total + (arrival - departure);
+    }, 0);
+    const hours = Math.floor(totalDurationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((totalDurationMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+};
