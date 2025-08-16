@@ -11,7 +11,6 @@ import {
   Divider,
   Card,
   CardContent,
-  Avatar,
   Stack,
   Chip,
   Alert,
@@ -32,6 +31,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FlightIcon from '@mui/icons-material/Flight';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { getCityName, getFlightName } from '../utils/FlightData';
 
 interface Traveler {
   id: string;
@@ -117,19 +117,53 @@ const ManageReservation: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchText.trim()) return;
+    if (!searchText.trim()) {
+      setError('Please enter a valid booking ID.');
+      return;
+    }
     setLoading(true);
     setError('');
     setBookingData(null);
 
     try {
       const encodedId = encodeURIComponent(searchText);
-      const res = await fetch(`http://localhost:8080/booking/flight-order/${encodedId}`);
-      if (!res.ok) throw new Error('Failed to fetch booking');
-      const data: BookingData = await res.json();
+      console.log(`Fetching booking for ID: ${encodedId}`);
+      const res = await fetch(`http://localhost:8080/booking/flight-order/${encodedId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      console.log(`Response status: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('Booking not found. Please check your booking ID.');
+        } else if (res.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        } else {
+          const text = await res.text();
+          console.log('Raw response:', text);
+          throw new Error(`Failed to fetch booking (Status: ${res.status})`);
+        }
+      }
+      let data: BookingData;
+      try {
+        data = await res.json();
+        console.log('Booking data:', data);
+      } catch (jsonError) {
+        throw new Error('Invalid response format from server.');
+      }
+      if (!data.orderId || !data.flightOffer?.trips) {
+        throw new Error('Incomplete booking data received.');
+      }
+      // Validate leg data for flight names
+      data.flightOffer.trips.forEach((trip, idx) => {
+        trip.legs.forEach((leg) => {
+          console.log(`Flight name for leg ${leg.legNo}:`, getFlightName(leg.operatingCarrierCode, leg.flightNumber));
+        });
+      });
       setBookingData(data);
-    } catch (err) {
-      setError('Could not fetch booking details. Please check your booking ID and try again.');
+    } catch (err: any) {
+      console.error('Fetch error:', err.message);
+      setError(err.message || 'Could not fetch booking details. Please check your booking ID and try again.');
     } finally {
       setLoading(false);
     }
@@ -251,7 +285,7 @@ const ManageReservation: React.FC = () => {
               <IconButton
                 color="inherit"
                 size="small"
-                onClick={() => setError('')}
+                onClick={handleSearch}
               >
                 <RefreshIcon />
               </IconButton>
@@ -265,8 +299,8 @@ const ManageReservation: React.FC = () => {
       {/* Loading State */}
       {loading && (
         <Box textAlign="center" py={4}>
-          <CircularProgress size={40} sx={{ color: 'white' }} />
-          <Typography color="white" mt={2}>
+          <CircularProgress size={40} sx={{ color: theme.palette.primary.main }} />
+          <Typography color="text.primary" mt={2}>
             Searching for your booking...
           </Typography>
         </Box>
@@ -364,7 +398,6 @@ const ManageReservation: React.FC = () => {
                       }}
                     >
                       <Stack direction="row" alignItems="center" spacing={3} mb={2}>
-
                         <Box flex={1}>
                           <Typography variant="h6" fontWeight="bold" gutterBottom>
                             {traveler.firstName} {traveler.lastName}
@@ -372,13 +405,13 @@ const ManageReservation: React.FC = () => {
                           <Stack direction="row" spacing={2} flexWrap="wrap">
                             <Chip 
                               icon={<PersonIcon />} 
-                              label={traveler.gender} 
+                              label={traveler.gender || 'N/A'} 
                               size="small" 
                               variant="outlined"
                             />
                             <Chip 
                               icon={<EventIcon />} 
-                              label={traveler.dateOfBirth} 
+                              label={traveler.dateOfBirth || 'N/A'} 
                               size="small" 
                               variant="outlined"
                             />
@@ -391,7 +424,7 @@ const ManageReservation: React.FC = () => {
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <PhoneIcon color="action" fontSize="small" />
                             <Typography variant="body2">
-                              <strong>Phone:</strong> +{traveler.phones[0]?.countryCallingCode} {traveler.phones[0]?.number}
+                              <strong>Phone:</strong> {traveler.phones[0]?.countryCallingCode || ''} {traveler.phones[0]?.number || 'N/A'}
                             </Typography>
                           </Stack>
                         </Grid>
@@ -399,7 +432,7 @@ const ManageReservation: React.FC = () => {
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <DescriptionIcon color="action" fontSize="small" />
                             <Typography variant="body2">
-                              <strong>Document:</strong> {traveler.documents[0]?.documentType} — {traveler.documents[0]?.number}
+                              <strong>Document:</strong> {traveler.documents[0]?.documentType || 'N/A'} {traveler.documents[0]?.number || 'N/A'}
                             </Typography>
                           </Stack>
                         </Grid>
@@ -434,12 +467,12 @@ const ManageReservation: React.FC = () => {
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                       <Typography variant="h6" fontWeight="bold" color="primary">
-                        {trip.from} → {trip.to}
+                        {idx === 0 ? 'Outbound Flight' : 'Return Flight'}: {getCityName(trip.from) || 'Unknown'} → {getCityName(trip.to) || 'Unknown'}
                       </Typography>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <AccessTimeIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="text.secondary">
-                          {trip.totalFlightDuration}
+                          {trip.totalFlightDuration || 'N/A'}
                         </Typography>
                       </Stack>
                     </Stack>
@@ -461,7 +494,7 @@ const ManageReservation: React.FC = () => {
                                     Departure
                                   </Typography>
                                   <Typography variant="body1">
-                                    {leg.departureAirport} Terminal {leg.departureTerminal}
+                                    {getCityName(leg.departureAirport) || 'Unknown'} Terminal {leg.departureTerminal || 'N/A'}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
                                     {departureTime.date} • {departureTime.time}
@@ -477,7 +510,7 @@ const ManageReservation: React.FC = () => {
                                     Arrival
                                   </Typography>
                                   <Typography variant="body1">
-                                    {leg.arrivalAirport} Terminal {leg.arrivalTerminal}
+                                    {getCityName(leg.arrivalAirport) || 'Unknown'} Terminal {leg.arrivalTerminal || 'N/A'}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
                                     {arrivalTime.date} • {arrivalTime.time}
@@ -489,25 +522,27 @@ const ManageReservation: React.FC = () => {
                           
                           <Stack direction="row" spacing={2} mt={2} flexWrap="wrap">
                             <Chip 
-                              label={`Flight ${leg.flightNumber}`} 
+                              label={getFlightName(leg.operatingCarrierCode, leg.flightNumber) || 'Unknown Flight'} 
                               size="small" 
                               color="primary"
                               variant="outlined"
                             />
                             <Chip 
-                              label={`${leg.operatingCarrierCode} • ${leg.aircraftCode}`} 
+                              label={leg.aircraftCode || 'N/A'} 
                               size="small" 
                               variant="outlined"
                             />
                             <Chip 
-                              label={leg.duration} 
+                              label={leg.duration || 'N/A'} 
                               size="small" 
                               variant="outlined"
                             />
                           </Stack>
                           
-                          {legIndex < trip.legs.length - 1 && (
-                            <Divider sx={{ mt: 2 }} />
+                          {leg.layoverAfter && (
+                            <Typography variant="body2" color="text.secondary" mt={2}>
+                              <strong>Layover:</strong> {leg.layoverAfter}
+                            </Typography>
                           )}
                         </Box>
                       );

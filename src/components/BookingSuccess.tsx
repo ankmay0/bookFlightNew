@@ -15,6 +15,7 @@ import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import FlightLandIcon from "@mui/icons-material/FlightLand";
 import PersonIcon from "@mui/icons-material/Person";
 import PhoneIcon from "@mui/icons-material/Phone";
+import { getCityName, getFlightName } from "../utils/FlightData"; // Adjust path to flightData
 
 const BookingSuccess: React.FC = () => {
   const location = useLocation();
@@ -196,14 +197,14 @@ const BookingSuccess: React.FC = () => {
                         Flight Information
                       </Typography>
                       <Typography variant="body2" color="text.secondary" mb={1}>
-                        {trip.from || 'N/A'} → {trip.to || 'N/A'} • {trip.stops === 0 ? "Direct" : `${trip.stops || 0} Stop${(trip.stops || 0) > 1 ? "s" : ""}`}
+                        {getCityName(trip.from) || 'N/A'} → {getCityName(trip.to) || 'N/A'} • {trip.stops === 0 ? "Direct" : `${trip.stops || 0} Stop${(trip.stops || 0) > 1 ? "s" : ""}`}
                       </Typography>
                       {legs.map((leg: any, idx: number) => (
                         <Box key={idx} sx={{ mb: 1, border: "1px solid #e2e8f0", borderRadius: 2, p: 0.5, bgcolor: "#f8fafc" }}>
                           <Grid container alignItems="center" spacing={1}>
                             <Grid item xs={12}>
                               <Chip
-                                label={`${leg.operatingCarrierCode || ''} ${leg.flightNumber || ''}`}
+                                label={getFlightName(leg.operatingCarrierCode || '', leg.flightNumber || '')}
                                 color="primary"
                                 size="small"
                                 sx={{ fontWeight: 600, fontSize: "0.8rem" }}
@@ -219,7 +220,7 @@ const BookingSuccess: React.FC = () => {
                                         minute: "2-digit",
                                       })
                                     : 'N/A'}
-                                </strong> {leg.departureAirport || 'N/A'}
+                                </strong> {getCityName(leg.departureAirport) || 'N/A'}
                               </Typography>
                             </Grid>
                             <Grid item xs={6}>
@@ -232,7 +233,7 @@ const BookingSuccess: React.FC = () => {
                                         minute: "2-digit",
                                       })
                                     : 'N/A'}
-                                </strong> {leg.arrivalAirport || 'N/A'}
+                                </strong> {getCityName(leg.arrivalAirport) || 'N/A'}
                               </Typography>
                             </Grid>
                             <Grid item xs={12}>
