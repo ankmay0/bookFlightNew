@@ -12,7 +12,6 @@ import Divider from "@mui/material/Divider";
 import Lottie from "lottie-react";
 import SidebarFilters from "./SidebarFilters";
 import { Flight } from "../Types/FlightTypes";
-import { useNavigate } from "react-router-dom";
 import { BookingStep } from "./FlightSearchResults";
 
 // --- Airline utilities --- //
@@ -58,7 +57,7 @@ const airportCityMap: { [key: string]: string } = {
   HYD: "Hyderabad",
   CCU: "Kolkata",
   DXB: "Dubai",
-  // ...add more as needed
+  PDX: "Portland",
 };
 
 const getCityName = (airportCode: string): string =>
@@ -91,141 +90,128 @@ interface FlightListProps {
   currentStep: BookingStep;
 }
 
-// Extracted FlightCard component for reusability - COMPACT VERSION
+// --- Compact Flight Card ---
 const FlightCard: React.FC<{
   flight: Flight;
   tripIndex: number;
   onSelect: () => void;
-  mapStopsToLabel: (stops: number | undefined) => string;
-}> = ({ flight, tripIndex, onSelect, mapStopsToLabel }) => {
+}> = ({ flight, tripIndex, onSelect }) => {
   const trip = flight.trips[tripIndex];
-  const firstLeg = trip?.legs?.[0];
+  if (!trip || !trip.legs?.length) return null;
 
-  const prettyTime = (dt: string) => (
-    <span style={{ fontWeight: 700, fontSize: 18 }}>
-      {new Date(dt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-    </span>
-  );
+  const legs = trip.legs;
+  const firstLeg = legs[0];
+  const lastLeg = legs[legs.length - 1];
 
-  const CityConnectorLine = () => (
-    <Box
-      sx={{
-        height: 3,
-        background: "linear-gradient(90deg, #209e48 70%, #8fdc94 100%)",
-        borderRadius: 2,
-        minWidth: 24,
-        mx: 1,
-        display: "inline-block",
-      }}
-    />
-  );
+  const prettyTime = (dt: string) =>
+    new Date(dt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const cityText = (airport: string) => (
-    <span>
-      <span style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{getCityName(airport)}</span>
-      <span style={{ color: "#888", fontWeight: 400, fontSize: 12, marginLeft: 4 }}>({airport})</span>
-    </span>
-  );
+  const cityText = (airport: string) =>
+    `${getCityName(airport)} (${airport})`;
 
-  const formatPrice = (price: number | string | undefined) => {
-    if (typeof price === "number") {
-      return price.toLocaleString("en-IN");
-    }
-    return String(price ?? 0);
-  };
+  const formatPrice = (price: number | string | undefined) =>
+    typeof price === "number" ? price.toLocaleString("en-IN") : String(price ?? 0);
 
   return (
     <Paper
       elevation={0}
       sx={{
-        borderRadius: 2,
-        p: 1.5,
+        borderRadius: 1.5,
+        p: 1,
         backgroundColor: "#ffffff",
         border: "1px solid #ddd",
-        transition: "border-color 0.3s, background-color 0.3s",
-        "&:hover": {
-          borderColor: "#aaa",
-          backgroundColor: "#ffffff",
-        },
       }}
     >
+      {/* Airline + Price */}
       <Grid container alignItems="center" justifyContent="space-between">
-        <Grid item xs={9}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            {firstLeg && (
-              <>
-                <img
-                  src={getAirlineIconURL(firstLeg.operatingCarrierCode)}
-                  alt={`${getAirlineName(firstLeg.operatingCarrierCode)} logo`}
-                  style={{ height: 20, width: 20, marginRight: 6, verticalAlign: "middle", borderRadius: 3, background: "#fff" }}
-                />
-                <strong style={{ fontWeight: 800, fontSize: 14 }}>{getAirlineName(firstLeg.operatingCarrierCode)}</strong>{" "}
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{firstLeg.flightNumber}</span>
-              </>
-            )}
-          </Typography>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mt: 0.25 }}>
-            {mapStopsToLabel(trip?.stops)}
-          </Typography>
+        <Grid item>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <img
+              src={getAirlineIconURL(firstLeg.operatingCarrierCode)}
+              alt={getAirlineName(firstLeg.operatingCarrierCode)}
+              style={{
+                height: 16,
+                width: 16,
+                borderRadius: 3,
+                background: "#fff",
+              }}
+            />
+            <Typography variant="subtitle2" fontWeight={700}>
+              {getAirlineName(firstLeg.operatingCarrierCode)}{" "}
+              {firstLeg.flightNumber}
+            </Typography>
+          </Box>
         </Grid>
-        <Grid item xs={3} sx={{ textAlign: "right" }}>
+        <Grid item sx={{ display: "flex", gap: 1 }}>
           <Typography
-            variant="subtitle1"
+            variant="subtitle2"
             fontWeight={700}
-            sx={{ color: "green", padding: "4px 8px" }}
+            sx={{ color: "green" }}
           >
             ₹{formatPrice(flight.totalPrice)}
           </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={onSelect}
+            sx={{ minHeight: 28, fontSize: 12 }}
+          >
+            Select
+          </Button>
         </Grid>
       </Grid>
 
       <Divider sx={{ my: 1 }} />
 
-      <Box>
-        {trip?.legs?.map((leg, lIdx) => (
-          <Box
-            key={lIdx}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              my: 1,
-              px: 1.5,
-              py: 1,
-              borderRadius: 2,
-              bgcolor: "#ffffff",
-              border: "1px solid #eee",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", flex: 1, overflow: "auto" }}>
-              <Box sx={{ textAlign: "right", minWidth: 110, pr: 0.5 }}>
-                {prettyTime(leg.departureDateTime)}
-                <br />
-                {cityText(leg.departureAirport)}
-              </Box>
-              <CityConnectorLine />
-              <Box sx={{ textAlign: "left", minWidth: 110, pl: 0.5 }}>
-                {prettyTime(leg.arrivalDateTime)}
-                <br />
-                {cityText(leg.arrivalAirport)}
-              </Box>
-            </Box>
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.25, minWidth: 100 }}>
-              <span style={{ color: "#666", fontWeight: 600, fontSize: 13 }}>{leg.duration}</span>
-              <span style={{ color: "#aaa", fontSize: 12 }}>
-                Aircraft: {leg.aircraftCode}
-              </span>
-            </Box>
-          </Box>
-        ))}
+      {/* Departure and Arrival */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", px: 1 }}>
+        <Box>
+          <Typography fontWeight={700}>{prettyTime(firstLeg.departureDateTime)}</Typography>
+          <Typography variant="caption">{cityText(firstLeg.departureAirport)}</Typography>
+        </Box>
+        <Typography variant="body2" sx={{ alignSelf: "center" }}>
+          {trip.stops > 0 ? `${trip.stops} stop${trip.stops > 1 ? "s" : ""}` : "Non-stop"}
+        </Typography>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography fontWeight={700}>{prettyTime(lastLeg.arrivalDateTime)}</Typography>
+          <Typography variant="caption">{cityText(lastLeg.arrivalAirport)}</Typography>
+        </Box>
       </Box>
 
-      {/* Select Button */}
-      <Box sx={{ textAlign: "right", mt: 1.5 }}>
-        <Button variant="contained" color="primary" size="small" onClick={onSelect}>
-          Select
-        </Button>
-      </Box>
+      {/* Stops in the middle */}
+      {legs.length > 1 && (
+        <Box sx={{ mt: 1 }}>
+          {legs.slice(0, -1).map((leg, idx) => {
+            const nextLeg = legs[idx + 1];
+            if (!nextLeg) return null;
+            return (
+              <Box
+                key={idx}
+                sx={{
+                  p: 1,
+                  bgcolor: "#fafafa",
+                  borderRadius: 1,
+                  border: "1px solid #eee",
+                  my: 0.5,
+                }}
+              >
+                <Typography variant="caption">
+                  {prettyTime(leg.arrivalDateTime)} {cityText(leg.arrivalAirport)}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Layover: {nextLeg.duration}
+                </Typography>
+                <Typography variant="caption">
+                  Aircraft: {leg.aircraftCode}
+                </Typography>
+                <Typography variant="caption" display="block">
+                  Departs: {prettyTime(nextLeg.departureDateTime)} {cityText(nextLeg.departureAirport)}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
     </Paper>
   );
 };
@@ -240,7 +226,6 @@ const FlightList: React.FC<FlightListProps> = ({
   showFilters,
   handleDepartureSelect,
   handleConfirmSelection,
-  mapStopsToLabel,
   priceRange,
   setPriceRange,
   selectedTimes,
@@ -256,13 +241,13 @@ const FlightList: React.FC<FlightListProps> = ({
   setSelectedDepartureFlight,
   currentStep,
 }) => {
-  const flightsToShow = currentStep === 'departure' 
-    ? filteredFlights.filter(f => f.trips[0]?.from === from && f.trips[0]?.to === to)
-    : filteredFlights.filter(f => f.trips[1]?.from === to && f.trips[1]?.to === from);
-
-  const departureFlights = filteredFlights.filter((flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to);
+  const departureFlights = filteredFlights.filter(
+    (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
+  );
   const returnFlights = selectedDepartureFlight
-    ? filteredFlights.filter((flight) => flight.trips[1]?.from === to && flight.trips[1]?.to === from)
+    ? filteredFlights.filter(
+        (flight) => flight.trips[1]?.from === to && flight.trips[1]?.to === from
+      )
     : [];
 
   return (
@@ -288,14 +273,20 @@ const FlightList: React.FC<FlightListProps> = ({
       <Grid item xs={12} md={showFilters ? 9 : 12}>
         {loading ? (
           lottieJson ? (
-            <Lottie animationData={lottieJson} style={{ height: 200, width: 200, margin: "0 auto" }} loop autoplay />
+            <Lottie
+              animationData={lottieJson}
+              style={{ height: 200, width: 200, margin: "0 auto" }}
+              loop
+              autoplay
+            />
           ) : (
             <CircularProgress sx={{ display: "block", margin: "0 auto" }} />
           )
         ) : !selectedDepartureFlight ? (
-          <Stack spacing={3}>
+          <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Departure Flight from {getCityName(from)} to {getCityName(to)}
+              Choose Your Departure Flight from {getCityName(from)} to{" "}
+              {getCityName(to)}
             </Typography>
             {departureFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
@@ -308,29 +299,19 @@ const FlightList: React.FC<FlightListProps> = ({
                   flight={flight}
                   tripIndex={0}
                   onSelect={() => handleDepartureSelect(flight)}
-                  mapStopsToLabel={mapStopsToLabel}
                 />
               ))
             )}
-
-            {setSelectedDepartureFlight && (
-              <Button
-                variant="outlined"
-                onClick={() => setSelectedDepartureFlight(null)}
-                sx={{ mt: 2, alignSelf: "flex-start" }}
-              >
-                Change Departure Flight
-              </Button>
-            )}
           </Stack>
         ) : (
-          <Stack spacing={3}>
+          <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Return Flight from {getCityName(to)} to {getCityName(from)}
+              Choose Your Return Flight from {getCityName(to)} to{" "}
+              {getCityName(from)}
             </Typography>
             {returnFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
-                No return flights available. Try adjusting your filters or select a different departure.
+                No return flights available. Try adjusting your filters.
               </Typography>
             ) : (
               returnFlights.map((flight, idx) => (
@@ -339,14 +320,15 @@ const FlightList: React.FC<FlightListProps> = ({
                   flight={flight}
                   tripIndex={1}
                   onSelect={() => handleConfirmSelection(flight)}
-                  mapStopsToLabel={mapStopsToLabel}
                 />
               ))
             )}
             <Button
               variant="outlined"
-              onClick={() => setSelectedDepartureFlight && setSelectedDepartureFlight(null)}
-              sx={{ mt: 2, alignSelf: "flex-start" }}
+              onClick={() =>
+                setSelectedDepartureFlight &&
+                setSelectedDepartureFlight(null)
+              }
             >
               Change Departure Flight
             </Button>
