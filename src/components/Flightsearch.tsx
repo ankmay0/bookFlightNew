@@ -43,13 +43,13 @@ const FlightSearch: React.FC = () => {
   const [returnDate, setReturnDate] = useState("");
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [segments, setSegments] = useState([{ from: "", to: "", date: "" }]);
+  const [segments, setSegments] = useState([{ from: "", to: "", date: "" }, { from: "", to: "", date: "" }]);
   const [fromOptions, setFromOptions] = useState<any[]>([]);
   const [toOptions, setToOptions] = useState<any[]>([]);
   const [fromInputValue, setFromInputValue] = useState("");
   const [toInputValue, setToInputValue] = useState("");
-  const [multiFromInputValue, setMultiFromInputValue] = useState<string[]>([""]);
-  const [multiToInputValue, setMultiToInputValue] = useState<string[]>([""]);
+  const [multiFromInputValue, setMultiFromInputValue] = useState<string[]>(["", ""]);
+  const [multiToInputValue, setMultiToInputValue] = useState<string[]>(["", ""]);
   const [isFromLoading, setIsFromLoading] = useState(false);
   const [isToLoading, setIsToLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +71,9 @@ const FlightSearch: React.FC = () => {
   useEffect(() => {
     if (tripType !== "round") setReturnDate("");
     if (tripType !== "multi") {
-      setSegments([{ from: "", to: "", date: "" }]);
-      setMultiFromInputValue([""]);
-      setMultiToInputValue([""]);
+      setSegments([{ from: "", to: "", date: "" }, { from: "", to: "", date: "" }]);
+      setMultiFromInputValue(["", ""]);
+      setMultiToInputValue(["", ""]);
     }
   }, [tripType]);
 
