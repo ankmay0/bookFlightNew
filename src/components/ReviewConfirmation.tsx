@@ -115,6 +115,7 @@ const ReviewConfirmation: React.FC = () => {
       );
 
       console.log("Backend response:", bookingData); // Debug backend response
+      console.log("Booking data:", travelers);
       navigate("/booking-success", {
         state: { bookingData, passengers, contact, flight },
       });

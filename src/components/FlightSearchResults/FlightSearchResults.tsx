@@ -17,6 +17,7 @@ import {
     Tooltip,
     useMediaQuery,
     Fade,
+    Alert,
 } from "@mui/material";
 import {
     FilterList as FilterListIcon,
@@ -49,12 +50,14 @@ const airlinesData: { [key: string]: { name: string; icon: string } } = {
     "6E": { name: "IndiGo", icon: "https://content.airhex.com/content/logos/airlines_6E_75_75_s.png" },
     SG: { name: "SpiceJet", icon: "https://content.airhex.com/content/logos/airlines_SG_75_75_s.png" },
     UK: { name: "Vistara", icon: "https://content.airhex.com/content/logos/airlines_UK_75_75_s.png" },
-    // Add more codes if needed
+    TK: { name: "Turkish Airlines", icon: "https://content.airhex.com/content/logos/airlines_TK_75_75_s.png" },
 };
+
 const getAirlineName = (code: string) => {
     const d = airlinesData[code];
     return d ? d.name : code;
 };
+
 const getAirlineIconURL = (code: string) =>
     airlinesData[code]?.icon || `https://content.airhex.com/content/logos/airlines_${code.toUpperCase()}_75_75_s.png`;
 
@@ -91,6 +94,7 @@ const FlightSearchResults: React.FC = () => {
     const [flights, setFlights] = useState<Flight[]>([]);
     const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<string>("recommended");
     const [showFilters, setShowFilters] = useState<boolean>(true);
     const [priceRange, setPriceRange] = useState<number[]>([200, 150000]);
@@ -112,9 +116,8 @@ const FlightSearchResults: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const state = location.state || {};
-
-    // These could be { label, value, city, name, ... }
-    const { from, to, departDate, returnDate, adults, children, fromDetails, toDetails } = state;
+    const { from, to, departDate, returnDate, adults, children, fromDetails, toDetails, tripType } = state;
+    const isOneWay = tripType === "oneway" || !returnDate;
 
     // --- Data Fetching/Effect Logic ---
     useEffect(() => {
@@ -125,26 +128,39 @@ const FlightSearchResults: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!from || !to || !departDate || (!adults && !children)) return;
+        if (!from || !to || !departDate || (!adults && !children)) {
+            setError("Missing search parameters. Please try again.");
+            setLoading(false);
+            return;
+        }
         const adt = adults || 0,
             chd = children || 0;
         let url = `http://localhost:8080/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
         if (adt) url += `&adults=${adt}`;
         if (chd) url += `&children=${chd}`;
-        if (returnDate) url += `&returnDate=${returnDate}`;
+        if (returnDate && !isOneWay) url += `&returnDate=${returnDate}`;
         setLoading(true);
         fetch(url)
             .then((res) => {
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    throw new Error(
+                        res.status === 400
+                            ? "Invalid search parameters."
+                            : res.status === 500
+                            ? "Server error. Please try again later."
+                            : `HTTP error ${res.status}`
+                    );
+                }
                 return res.json();
             })
             .then((data) => {
+                console.log("Flight search response:", data);
                 let flightsArr: Flight[] = Array.isArray(data.flightsAvailable) ? data.flightsAvailable : [];
                 setFlights(flightsArr);
                 setFilteredFlights(flightsArr);
                 const prices = flightsArr.map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
-                setMinPrice(Math.min(...prices));
-                setMaxPrice(Math.max(...prices));
+                setMinPrice(Math.min(...prices) || 200);
+                setMaxPrice(Math.max(...prices) || 150000);
                 const stopsSet = new Set<string>(),
                     airlinesSet = new Set<string>();
                 flightsArr.forEach((f) => {
@@ -155,12 +171,14 @@ const FlightSearchResults: React.FC = () => {
                 setAvailableAirlines(Array.from(airlinesSet));
                 setLoading(false);
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error("Flight search error:", err);
+                setError(err.message || "Failed to fetch flights. Please try again.");
                 setFlights([]);
                 setFilteredFlights([]);
                 setLoading(false);
             });
-    }, [from, to, departDate, returnDate, adults, children]);
+    }, [from, to, departDate, returnDate, adults, children, isOneWay]);
 
     useEffect(() => {
         let updated = flights.filter((flight) => {
@@ -206,7 +224,9 @@ const FlightSearchResults: React.FC = () => {
     }, [priceRange, selectedTimes, selectedStops, selectedAirlines, sortBy, flights]);
 
     // Compute count BEFORE any render functions that use it
-    const count = selectedDepartureFlight
+    const count = isOneWay
+        ? filteredFlights.filter((f) => f.trips?.[0]?.from === from && f.trips?.[0]?.to === to).length
+        : selectedDepartureFlight
         ? filteredFlights.filter((f) => f.trips[1]?.from === to && f.trips[1]?.to === from).length
         : filteredFlights.filter((f) => f.trips?.[0]?.from === from && f.trips?.[0]?.to === to).length;
 
@@ -300,7 +320,7 @@ const FlightSearchResults: React.FC = () => {
                             <Chip
                                 icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
                                 label={
-                                    returnDate
+                                    returnDate && !isOneWay
                                         ? `${new Date(departDate).toLocaleDateString("en-GB", {
                                             day: "numeric",
                                             month: "short",
@@ -350,6 +370,8 @@ const FlightSearchResults: React.FC = () => {
     };
 
     const renderBreadcrumb = () => {
+        if (isOneWay) return null; // Hide breadcrumbs for one-way trips
+
         const highlight = {
             fontWeight: 700,
             px: 1.5,
@@ -479,7 +501,11 @@ const FlightSearchResults: React.FC = () => {
                 <Box display="flex" alignItems="center" gap={1.2}>
                     <AirplaneIcon color="primary" fontSize="small" />
                     <Typography fontWeight={700}>
-                        {selectedDepartureFlight ? "Recommended returning flights" : `${count} flights found`}
+                        {isOneWay
+                            ? `${count} flights found`
+                            : selectedDepartureFlight
+                            ? "Recommended returning flights"
+                            : `${count} flights found`}
                     </Typography>
                     <Chip
                         label={`${count}`}
@@ -561,11 +587,28 @@ const FlightSearchResults: React.FC = () => {
         </Box>
     );
 
+    const handleDepartureSelect = (flight: Flight) => {
+        setSelectedDepartureFlight(flight);
+        if (isOneWay) {
+            navigate("/passenger-details", {
+                state: {
+                    flight: {
+                        ...flight,
+                        trips: [flight.trips[0]], // Only departure itinerary
+                    },
+                    passengers: (adults || 0) + (children || 0),
+                },
+            });
+        } else {
+            setCurrentStep("return");
+        }
+    };
+
     if (loading) return renderLoading();
 
     return (
         <Box sx={{ minHeight: "100vh", bgcolor: "white", p: { xs: 1, md: 4 } }}>
-            {/* Side-by-side summary and breadcrumbs, left-aligned */}
+            {/* Side-by-side summary and flight count */}
             <Box
                 sx={{
                     display: "flex",
@@ -577,11 +620,18 @@ const FlightSearchResults: React.FC = () => {
                 }}
             >
                 <Box sx={{ flex: { xs: "1 1 auto", md: "0 1 640px" }, minWidth: 0 }}>{renderSearchHeader()}</Box>
-
                 <Box sx={{ flex: { xs: "1 1 auto", md: "0 0 auto" }, minWidth: 0, alignSelf: { xs: "auto", md: "center" } }}>
                     {renderFlightCount()}
                 </Box>
             </Box>
+
+            {error && (
+                <Box sx={{ mb: 2 }}>
+                    <Alert severity="error" onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                </Box>
+            )}
 
             {currentStep === "review" ? (
                 <TripReview
@@ -651,10 +701,7 @@ const FlightSearchResults: React.FC = () => {
                         from={from}
                         to={to}
                         showFilters={showFilters}
-                        handleDepartureSelect={(flight) => {
-                            setSelectedDepartureFlight(flight);
-                            setCurrentStep("return");
-                        }}
+                        handleDepartureSelect={handleDepartureSelect}
                         handleConfirmSelection={(flight) => {
                             setSelectedReturnFlight(flight);
                             setCurrentStep("review");
