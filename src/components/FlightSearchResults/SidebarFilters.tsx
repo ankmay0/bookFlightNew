@@ -15,6 +15,8 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import FlightIcon from "@mui/icons-material/Flight";
+import ConnectingAirportsIcon from "@mui/icons-material/ConnectingAirports";
+import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import { SidebarFiltersProps } from "../Types/FlightTypes";
 
 // --- Airline utilities --- //
@@ -67,14 +69,27 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
     );
   };
 
+  // Map stop labels to icons
+  const stopIcons: { [key: string]: JSX.Element } = {
+    Direct: <FlightIcon fontSize="medium" sx={{ color: "#000000" }} />,
+    "1 Stop": <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />,
+    "2+ Stops": <ConnectingAirportsIcon fontSize="medium" sx={{ color: "#000000" }} />,
+  };
+
+  // Map time labels to icons
+  const timeIcons: { [key: string]: JSX.Element } = {
+    "Morning (6AM-12PM)": <WbSunnyIcon fontSize="medium" sx={{ color: "#000000" }} />,
+    "Afternoon (12PM-6PM)": <ScheduleIcon fontSize="medium" sx={{ color: "#000000" }} />,
+    "Evening (6PM-12AM)": <ScheduleIcon fontSize="medium" sx={{ color: "#000000" }} />,
+  };
+
   return (
     <Paper
       elevation={2}
       sx={{
         p: 3,
         borderRadius: 8,
-        background: "linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)",
-        color: "white",
+        bgcolor: "white",
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         transition: "transform 0.2s ease-in-out",
         "&:hover": {
@@ -83,21 +98,22 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
       }}
     >
       <Box display="flex" alignItems="center" gap={1.5} mb={3}>
-        <TuneIcon fontSize="medium" sx={{ color: "white" }} />
-        <Typography variant="h6" fontWeight={600}>
+        <TuneIcon fontSize="medium" sx={{ color: "#000000" }} />
+        <Typography variant="h6" fontWeight={600} color="#000000">
           Refine Your Search
         </Typography>
       </Box>
 
-      <Divider sx={{ mb: 3, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
+      <Divider sx={{ mb: 3, bgcolor: "#e0e0e0" }} />
 
       <Box mb={4}>
         <Typography
           variant="subtitle1"
-          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "white" }}
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "#000000" }}
           gutterBottom
         >
-          <CurrencyRupeeIcon fontSize="medium" /> Price Range
+          <CurrencyRupeeIcon fontSize="medium" sx={{ color: "#000000" }} />
+          Price Range
         </Typography>
         <Slider
           value={priceRange}
@@ -106,13 +122,13 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
           max={maxPrice}
           valueLabelDisplay="auto"
           sx={{
-            color: "#c71585",
+            color: "#3f15c7ff",
             "& .MuiSlider-thumb": {
               backgroundColor: "white",
               boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)",
             },
             "& .MuiSlider-track": {
-              background: "linear-gradient(90deg, #c71585, #2196f3)",
+              background: "linear-gradient(90deg, #151ec7ff, #2196f3)",
             },
           }}
         />
@@ -121,7 +137,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
           size="small"
           sx={{
             mt: 1,
-            background: "linear-gradient(90deg, #c71585, #2196f3)",
+            background: "linear-gradient(90deg, #4215c7ff, #2196f3)",
             color: "white",
             fontWeight: 500,
             borderRadius: 4,
@@ -132,10 +148,11 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
       <Box mb={4}>
         <Typography
           variant="subtitle1"
-          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "white" }}
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "#000000" }}
           gutterBottom
         >
-          <FlightTakeoffIcon fontSize="medium" /> Stops
+          <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />
+          Stops
         </Typography>
         <FormGroup>
           {availableStops.map((stop) => (
@@ -146,12 +163,12 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
                   checked={selectedStops.includes(stop)}
                   onChange={handleCheckboxChange(stop, selectedStops, setSelectedStops)}
                   sx={{
-                    color: "white",
+                    color: "#000000",
                     "&.Mui-checked": {
-                      color: "#c71585",
+                      color: "#4515c7ff",
                     },
                     "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      backgroundColor: "rgba(33, 150, 243, 0.1)",
                     },
                     transform: "scale(1)",
                     transition: "transform 0.2s ease-in-out",
@@ -163,13 +180,16 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
               }
               label={
                 <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                  <Typography sx={{ color: "white" }}>{stop}</Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {stopIcons[stop] || <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />}
+                    <Typography sx={{ color: "#000000" }}>{stop}</Typography>
+                  </Box>
                   {stopCounts && stopCounts[stop as keyof typeof stopCounts] > 0 && (
                     <Chip
                       label={stopCounts[stop as keyof typeof stopCounts]}
                       size="small"
                       sx={{
-                        background: "linear-gradient(90deg, #c71585, #2196f3)",
+                        background: "linear-gradient(90deg, #4715c7ff, #2196f3)",
                         color: "white",
                         fontWeight: 500,
                         borderRadius: 4,
@@ -185,7 +205,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
                 px: 1,
                 borderRadius: 2,
                 "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "rgba(33, 150, 243, 0.1)",
                 },
               }}
             />
@@ -196,57 +216,11 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
       <Box mb={4}>
         <Typography
           variant="subtitle1"
-          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "white" }}
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "#000000" }}
           gutterBottom
         >
-          <ScheduleIcon fontSize="medium" /> Departure Time
-        </Typography>
-        <FormGroup>
-          {["Morning (6AM-12PM)", "Afternoon (12PM-6PM)", "Evening (6PM-12AM)"].map((time) => (
-            <FormControlLabel
-              key={time}
-              control={
-                <Checkbox
-                  checked={selectedTimes.includes(time)}
-                  onChange={handleCheckboxChange(time, selectedTimes, setSelectedTimes)}
-                  sx={{
-                    color: "white",
-                    "&.Mui-checked": {
-                      color: "#c71585",
-                    },
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                    },
-                    transform: "scale(1)",
-                    transition: "transform 0.2s ease-in-out",
-                    "&.Mui-checked:hover": {
-                      transform: "scale(1.1)",
-                    },
-                  }}
-                />
-              }
-              label={<Typography sx={{ color: "white" }}>{time}</Typography>}
-              sx={{
-                width: "100%",
-                py: 0.5,
-                px: 1,
-                borderRadius: 2,
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            />
-          ))}
-        </FormGroup>
-      </Box>
-
-      <Box>
-        <Typography
-          variant="subtitle1"
-          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "white" }}
-          gutterBottom
-        >
-          <FlightIcon fontSize="medium" /> Airlines
+          <FlightIcon fontSize="medium" sx={{ color: "#000000" }} />
+          Airlines
         </Typography>
         <FormGroup>
           {availableAirlines.map((airline) => (
@@ -257,12 +231,12 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
                   checked={selectedAirlines.includes(airline)}
                   onChange={handleCheckboxChange(airline, selectedAirlines, setSelectedAirlines)}
                   sx={{
-                    color: "white",
+                    color: "#000000",
                     "&.Mui-checked": {
-                      color: "#c71585",
+                      color: "#4a15c7ff",
                     },
                     "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      backgroundColor: "rgba(33, 150, 243, 0.1)",
                     },
                     transform: "scale(1)",
                     transition: "transform 0.2s ease-in-out",
@@ -286,7 +260,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
                       boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                     }}
                   />
-                  <Typography sx={{ color: "white" }}>{getAirlineName(airline)}</Typography>
+                  <Typography sx={{ color: "#000000" }}>{getAirlineName(airline)}</Typography>
                 </Box>
               }
               sx={{
@@ -295,7 +269,60 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
                 px: 1,
                 borderRadius: 2,
                 "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "rgba(33, 150, 243, 0.1)",
+                },
+              }}
+            />
+          ))}
+        </FormGroup>
+      </Box>
+
+      <Box mb={4}>
+        <Typography
+          variant="subtitle1"
+          sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "#000000" }}
+          gutterBottom
+        >
+          <ScheduleIcon fontSize="medium" sx={{ color: "#000000" }} />
+          Departure Time
+        </Typography>
+        <FormGroup>
+          {["Morning (6AM-12PM)", "Afternoon (12PM-6PM)", "Evening (6PM-12AM)"].map((time) => (
+            <FormControlLabel
+              key={time}
+              control={
+                <Checkbox
+                  checked={selectedTimes.includes(time)}
+                  onChange={handleCheckboxChange(time, selectedTimes, setSelectedTimes)}
+                  sx={{
+                    color: "#000000",
+                    "&.Mui-checked": {
+                      color: "#c71585",
+                    },
+                    "&:hover": {
+                      backgroundColor: "rgba(33, 150, 243, 0.1)",
+                    },
+                    transform: "scale(1)",
+                    transition: "transform 0.2s ease-in-out",
+                    "&.Mui-checked:hover": {
+                      transform: "scale(1.1)",
+                    },
+                  }}
+                />
+              }
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {timeIcons[time] || <ScheduleIcon fontSize="medium" sx={{ color: "#000000" }} />}
+                  <Typography sx={{ color: "#000000" }}>{time}</Typography>
+                </Box>
+              }
+              sx={{
+                width: "100%",
+                py: 0.5,
+                px: 1,
+                borderRadius: 2,
+                "&:hover": {
+                  backgroundColor: "rgba(33, 150, 243, 0.1)",
                 },
               }}
             />
