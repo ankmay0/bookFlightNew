@@ -316,7 +316,7 @@ const ManageReservation: React.FC = () => {
               sx={{ 
                 borderRadius: 3, 
                 mb: 4, 
-                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                background: 'linear-gradient(135deg, #c71585 0%, #2196f3 100%)',
                 color: 'white',
                 overflow: 'hidden',
                 position: 'relative'
@@ -330,7 +330,7 @@ const ManageReservation: React.FC = () => {
                   <Chip 
                     label="CONFIRMED" 
                     sx={{ 
-                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      bgcolor: 'rgba(255, 255, 255, 0.3)', 
                       color: 'white',
                       fontWeight: 'bold'
                     }} 
