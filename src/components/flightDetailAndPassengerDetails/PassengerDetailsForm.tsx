@@ -264,7 +264,7 @@ const PassengerDetailsForm: React.FC<PassengerDetailsFormProps> = ({
                 Contact Information
             </Typography>
             <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={5}>
                     <TextField
                         label="Email Address"
                         name="email"
@@ -280,7 +280,7 @@ const PassengerDetailsForm: React.FC<PassengerDetailsFormProps> = ({
                         }}
                     />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={2}>
                     <Autocomplete
                         options={countryCodes}
                         getOptionLabel={(option) => option.label}
@@ -294,13 +294,13 @@ const PassengerDetailsForm: React.FC<PassengerDetailsFormProps> = ({
                                 helperText={errors.contact.countryCode}
                                 InputProps={{
                                     ...params.InputProps,
-                                    sx: { borderRadius: 1 },
+                                    sx: { borderRadius: 1, minWidth: 100 },
                                 }}
                             />
                         )}
                     />
                 </Grid>
-                <Grid item xs={12} sm={8}>
+                <Grid item xs={12} sm={5}>
                     <TextField
                         label="Phone Number"
                         name="phone"

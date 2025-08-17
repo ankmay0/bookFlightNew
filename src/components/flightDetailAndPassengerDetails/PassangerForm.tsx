@@ -87,17 +87,15 @@ const PassengerForm: React.FC<PassengerFormProps> = ({
     return (
         <Box
             sx={{
-                minHeight: "100vh",
                 width: "100vw",
                 bgcolor: "#f4f6f8",
                 p: { xs: 2, md: 4 },
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "center",
                 alignItems: "center",
             }}
         >
-            <Grid container spacing={3} sx={{ maxWidth: 1200, width: "100%" }}>
+            <Grid container spacing={3} sx={{ maxWidth: 1400, width: "100%" }}>
                 <Grid item xs={12} md={8}>
                     <PassengerDetailsForm
                         passengers={passengers}
