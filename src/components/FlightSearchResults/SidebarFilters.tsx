@@ -94,6 +94,26 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({
         <Chip label={`₹${minPrice} - ₹${maxPrice}`} size="small" color="primary" />
       </Box>
 
+       <Box mb={3}>
+        <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }} gutterBottom>
+          <ConnectingAirportsIcon fontSize="small" /> Stops
+        </Typography>
+        <FormGroup>
+          {availableStops.map((stop) => (
+            <FormControlLabel
+              key={stop}
+              control={
+                <Checkbox
+                  checked={selectedStops.includes(stop)}
+                  onChange={handleCheckboxChange(stop, selectedStops, setSelectedStops)}
+                />
+              }
+              label={stop}
+            />
+          ))}
+        </FormGroup>
+      </Box>
+
       <Box mb={3}>
         <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }} gutterBottom>
           <AccessTimeIcon fontSize="small" /> Departure Time
@@ -114,25 +134,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({
         </FormGroup>
       </Box>
 
-      <Box mb={3}>
-        <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }} gutterBottom>
-          <ConnectingAirportsIcon fontSize="small" /> Stops
-        </Typography>
-        <FormGroup>
-          {availableStops.map((stop) => (
-            <FormControlLabel
-              key={stop}
-              control={
-                <Checkbox
-                  checked={selectedStops.includes(stop)}
-                  onChange={handleCheckboxChange(stop, selectedStops, setSelectedStops)}
-                />
-              }
-              label={stop}
-            />
-          ))}
-        </FormGroup>
-      </Box>
+     
 
       <Box>
         <Typography variant="subtitle2" sx={{ display: "flex", alignItems: "center", gap: 1 }} gutterBottom>
