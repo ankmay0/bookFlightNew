@@ -80,10 +80,10 @@ const BookingSuccess: React.FC = () => {
         }}
       />
 
-      <Container maxWidth="md" sx={{ py: { xs: 3, sm: 6 } }}>
+      <Container maxWidth={false} sx={{ maxWidth: 1400, py: { xs: 3, sm: 6 } }}>
         <Paper
           sx={{
-            p: { xs: 2, sm: 4 },
+            p: { xs: 3, sm: 5 },
             borderRadius: 4,
             border: "1px solid #e2e8f0",
             boxShadow: "none",
@@ -91,11 +91,11 @@ const BookingSuccess: React.FC = () => {
           }}
         >
           <Grid container spacing={4} alignItems="flex-start">
-            <Grid item xs={12} sm={3} sx={{ textAlign: "center" }}>
+            <Grid item xs={12} sm={4} sx={{ textAlign: "center" }}>
               <Box
                 component="svg"
-                width="64"
-                height="64"
+                width="72"
+                height="72"
                 viewBox="0 0 24 24"
                 fill="none"
                 sx={{
@@ -104,18 +104,18 @@ const BookingSuccess: React.FC = () => {
                   display: "block",
                 }}
               >
-                <circle cx="12" cy="12" r="12" fill="#10b981" opacity="0.18" />
+                <circle cx="12" cy="12" r="12" fill="#00cc88" opacity="0.18" />
                 <circle
                   cx="12"
                   cy="12"
                   r="9"
-                  stroke="#10b981"
+                  stroke="#00cc88"
                   strokeWidth="1.5"
                   fill="white"
                 />
                 <path
                   d="M7 12L10 15L17 8"
-                  stroke="#10b981"
+                  stroke="#00cc88"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -131,19 +131,19 @@ const BookingSuccess: React.FC = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={9}>
+            <Grid item xs={12} sm={8}>
               <Stack spacing={2}>
                 <Box>
-                  <Typography variant="h5" fontWeight={700} color="#10b981" sx={{ mb: 1 }}>
+                  <Typography variant="h5" fontWeight={700} color="#00cc88" sx={{ mb: 1, fontSize: { xs: "1.7rem", md: "2.2rem" } }}>
                     Flight Booked! ✈️
                   </Typography>
-                  <Typography variant="subtitle2" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                     Your flight has been successfully booked. 🎉
                   </Typography>
                 </Box>
 
                 <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                     Booking Reference
                   </Typography>
                   <Typography
@@ -155,6 +155,7 @@ const BookingSuccess: React.FC = () => {
                       wordBreak: "break-all",
                       mt: 0.5,
                       mb: 1,
+                      fontSize: { xs: "1.2rem", md: "1.5rem" },
                     }}
                   >
                     {data.bookingData.orderId ? decodeURIComponent(data.bookingData.orderId) : "N/A"}
@@ -166,37 +167,37 @@ const BookingSuccess: React.FC = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <Box>
-                      <Typography variant="h6" fontWeight={600} mb={1}>
+                      <Typography variant="h6" fontWeight={600} mb={1} sx={{ fontSize: { xs: "1.2rem", md: "1.5rem" } }}>
                         <PersonIcon sx={{ mr: 1, verticalAlign: "middle", color: "#2c39e8" }} />
                         Passenger Details
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                         <strong>Name:</strong> {traveler.title || ''} {traveler.firstName || ''} {traveler.lastName || ''}
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                         <strong>DOB:</strong> {traveler.dob || 'N/A'}
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                         <strong>Gender:</strong> {traveler.gender || 'N/A'}
                       </Typography>
                       {contact.phone && (
-                        <Typography variant="body2">
+                        <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                           <PhoneIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: "middle" }} />
                           {contact.countryCode || ''} {contact.phone || ''}
                         </Typography>
                       )}
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                         <strong>Email:</strong> {contact.email || 'N/A'}
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Box>
-                      <Typography variant="h6" fontWeight={600} mb={1}>
+                      <Typography variant="h6" fontWeight={600} mb={1} sx={{ fontSize: { xs: "1.2rem", md: "1.5rem" } }}>
                         <FlightTakeoffIcon sx={{ mr: 1, verticalAlign: "middle", color: "#2c39e8" }} />
                         Flight Information
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" mb={1}>
+                      <Typography variant="body2" color="text.secondary" mb={1} sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                         {getCityName(trip.from) || 'N/A'} → {getCityName(trip.to) || 'N/A'} • {trip.stops === 0 ? "Direct" : `${trip.stops || 0} Stop${(trip.stops || 0) > 1 ? "s" : ""}`}
                       </Typography>
                       {legs.map((leg: any, idx: number) => (
@@ -207,11 +208,11 @@ const BookingSuccess: React.FC = () => {
                                 label={getFlightName(leg.operatingCarrierCode || '', leg.flightNumber || '')}
                                 color="primary"
                                 size="small"
-                                sx={{ fontWeight: 600, fontSize: "0.8rem" }}
+                                sx={{ fontWeight: 600, fontSize: "0.85rem" }}
                               />
                             </Grid>
                             <Grid item xs={6}>
-                              <Typography variant="body2">
+                              <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                                 <FlightTakeoffIcon sx={{ fontSize: 13, mr: 0.5, color: "#10b981" }} />
                                 <strong>
                                   {leg.departureDateTime
@@ -224,7 +225,7 @@ const BookingSuccess: React.FC = () => {
                               </Typography>
                             </Grid>
                             <Grid item xs={6}>
-                              <Typography variant="body2">
+                              <Typography variant="body2" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                                 <FlightLandIcon sx={{ fontSize: 13, mr: 0.5, color: "#f59e0b" }} />
                                 <strong>
                                   {leg.arrivalDateTime
@@ -238,7 +239,7 @@ const BookingSuccess: React.FC = () => {
                             </Grid>
                             <Grid item xs={12}>
                               {leg.layoverAfter && (
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: "0.9rem", md: "1rem" } }}>
                                   <strong>Layover:</strong> {leg.layoverAfter}
                                 </Typography>
                               )}
@@ -253,10 +254,10 @@ const BookingSuccess: React.FC = () => {
                 <Divider sx={{ my: 2 }} />
 
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6" fontWeight={600}>
+                  <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: "1.2rem", md: "1.5rem" } }}>
                     Total Paid
                   </Typography>
-                  <Typography variant="h5" fontWeight={700} color="#10b981">
+                  <Typography variant="h5" fontWeight={700} color="#10b981" sx={{ fontSize: { xs: "1.7rem", md: "2.2rem" } }}>
                     ₹{(flight.totalPrice && passengers.length) ? (parseFloat(flight.totalPrice) * passengers.length).toFixed(2) : "N/A"}
                   </Typography>
                 </Stack>
@@ -270,7 +271,7 @@ const BookingSuccess: React.FC = () => {
                       borderRadius: 3,
                       px: 3,
                       py: 1,
-                      fontSize: "1.05rem",
+                      fontSize: "1.1rem",
                       fontWeight: 600,
                       bgcolor: "#2c39e8",
                       "&:hover": { bgcolor: "#1f2ac4" },
