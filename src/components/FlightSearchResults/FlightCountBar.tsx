@@ -66,7 +66,7 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
         position: { xs: "sticky", md: "static" },
         zIndex: 8,
         top: { xs: 0, md: "auto" },
-        mt: 2,
+        mt: 0,
       }}
       aria-label="results bar"
     >
@@ -83,7 +83,7 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
           border: "1px solid",
           borderColor: "divider",
           boxShadow: "none",
-          mt: 6,
+          mt: 2,
         }}
       >
         <Box display="flex" alignItems="center" gap={1.2}>

@@ -328,7 +328,7 @@ const FlightSearchResults: React.FC = () => {
           mb: 2,
         }}
       >
-        <Box sx={{ flex: { xs: "1 1 auto", md: "0 1 640px" }, minWidth: 0 }}>
+        <Box sx={{ flex: { xs: "1 1 auto", md: "0 1 auto" }, minWidth: 0 }}>
           <TripSummary
             from={isMultiCity ? segments[0]?.from : from}
             to={isMultiCity ? segments[segments.length - 1]?.to : to}
