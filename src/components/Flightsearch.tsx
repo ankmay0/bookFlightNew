@@ -39,11 +39,13 @@ const FlightSearch: React.FC = () => {
   const [tripType, setTripType] = useState("round");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [fromDetails, setFromDetails] = useState<any>(null);
+  const [toDetails, setToDetails] = useState<any>(null);
   const [departDate, setDepartDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [segments, setSegments] = useState([{ from: "", to: "", date: "" }, { from: "", to: "", date: "" }]);
+  const [segments, setSegments] = useState([{ from: "", to: "", date: "", fromDetails: null, toDetails: null }, { from: "", to: "", date: "", fromDetails: null, toDetails: null }]);
   const [fromOptions, setFromOptions] = useState<any[]>([]);
   const [toOptions, setToOptions] = useState<any[]>([]);
   const [fromInputValue, setFromInputValue] = useState("");
@@ -71,7 +73,7 @@ const FlightSearch: React.FC = () => {
   useEffect(() => {
     if (tripType !== "round") setReturnDate("");
     if (tripType !== "multi") {
-      setSegments([{ from: "", to: "", date: "" }, { from: "", to: "", date: "" }]);
+      setSegments([{ from: "", to: "", date: "", fromDetails: null, toDetails: null }, { from: "", to: "", date: "", fromDetails: null, toDetails: null }]);
       setMultiFromInputValue(["", ""]);
       setMultiToInputValue(["", ""]);
     }
@@ -204,7 +206,7 @@ const FlightSearch: React.FC = () => {
       const commonData = { passengers: adults + children, adults, children, cabinClass };
       const navigationState = tripType === "multi" 
         ? { tripType, segments, ...commonData }
-        : { tripType, from, to, departDate, returnDate, ...commonData };
+        : { tripType, from, to, departDate, returnDate, fromDetails, toDetails, ...commonData };
       
       navigate("/results", { state: navigationState });
     } catch (err) {
@@ -214,13 +216,13 @@ const FlightSearch: React.FC = () => {
     }
   };
 
-  const handleSegmentChange = (idx: number, key: 'from' | 'to' | 'date', value: string) => {
+  const handleSegmentChange = (idx: number, key: 'from' | 'to' | 'date' | 'fromDetails' | 'toDetails', value: any) => {
     setSegments(prev => prev.map((seg, i) => i === idx ? { ...seg, [key]: value } : seg));
   };
 
   const addSegment = () => {
     if (segments.length < maxSegments) {
-      setSegments(s => [...s, { from: "", to: "", date: "" }]);
+      setSegments(s => [...s, { from: "", to: "", date: "", fromDetails: null, toDetails: null }]);
       setMultiFromInputValue(inputs => [...inputs, ""]);
       setMultiToInputValue(inputs => [...inputs, ""]);
     }
@@ -343,7 +345,11 @@ const FlightSearch: React.FC = () => {
                 fromOptions,
                 fromInputValue,
                 (value) => { setFromInputValue(value); debouncedFromFetch(value); },
-                (value) => { setFrom(value.value); setFromInputValue(value.label); },
+                (value) => { 
+                  setFrom(value.value); 
+                  setFromInputValue(value.label); 
+                  setFromDetails(value); 
+                },
                 "New York (NYC)",
                 true
               )}
@@ -355,7 +361,11 @@ const FlightSearch: React.FC = () => {
                 toOptions,
                 toInputValue,
                 (value) => { setToInputValue(value); debouncedToFetch(value); },
-                (value) => { setTo(value.value); setToInputValue(value.label); },
+                (value) => { 
+                  setTo(value.value); 
+                  setToInputValue(value.label); 
+                  setToDetails(value); 
+                },
                 "Los Angeles (LAX)",
                 false
               )}
@@ -476,6 +486,7 @@ const FlightSearch: React.FC = () => {
                     },
                     (value) => {
                       handleSegmentChange(idx, "from", value.value);
+                      handleSegmentChange(idx, "fromDetails", value);
                       setMultiFromInputValue(inputs => inputs.map((v, i) => i === idx ? value.label : v));
                     },
                     "",
@@ -494,6 +505,7 @@ const FlightSearch: React.FC = () => {
                     },
                     (value) => {
                       handleSegmentChange(idx, "to", value.value);
+                      handleSegmentChange(idx, "toDetails", value);
                       setMultiToInputValue(inputs => inputs.map((v, i) => i === idx ? value.label : v));
                     },
                     "",

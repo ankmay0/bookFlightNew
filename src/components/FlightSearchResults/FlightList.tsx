@@ -14,7 +14,6 @@ import SidebarFilters from "./SidebarFilters";
 import { Flight } from "../Types/FlightTypes";
 import { BookingStep } from "./FlightSearchResults";
 
-// --- Airline utilities --- //
 const airlinesData: { [key: string]: { name: string; icon: string } } = {
   DL: { name: "Delta Air Lines", icon: "https://content.airhex.com/content/logos/airlines_DL_75_75_s.png" },
   AA: { name: "American Airlines", icon: "https://content.airhex.com/content/logos/airlines_AA_75_75_s.png" },
@@ -38,7 +37,6 @@ const getAirlineIconURL = (code: string): string =>
   airlinesData[code as keyof typeof airlinesData]?.icon ||
   `https://content.airhex.com/content/logos/airlines_${code?.toUpperCase?.() ?? ""}_75_75_s.png`;
 
-// --- Airport (city) mapping --- //
 const airportCityMap: { [key: string]: string } = {
   EWR: "Newark",
   JFK: "New York",
@@ -88,9 +86,10 @@ interface FlightListProps {
   maxPrice: number;
   setSelectedDepartureFlight?: React.Dispatch<React.SetStateAction<Flight | null>>;
   currentStep: BookingStep;
+  segments?: Array<{ from: string; to: string; date: string }>;
+  selectedFlights?: (Flight | null)[];
 }
 
-// --- Compact Flight Card ---
 const FlightCard: React.FC<{
   flight: Flight;
   tripIndex: number;
@@ -122,7 +121,6 @@ const FlightCard: React.FC<{
         border: "1px solid #ddd",
       }}
     >
-      {/* Airline + Price */}
       <Grid container alignItems="center" justifyContent="space-between">
         <Grid item>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -163,7 +161,6 @@ const FlightCard: React.FC<{
 
       <Divider sx={{ my: 1 }} />
 
-      {/* Departure and Arrival */}
       <Box sx={{ display: "flex", justifyContent: "space-between", px: 1 }}>
         <Box>
           <Typography fontWeight={700}>{prettyTime(firstLeg.departureDateTime)}</Typography>
@@ -178,7 +175,6 @@ const FlightCard: React.FC<{
         </Box>
       </Box>
 
-      {/* Stops in the middle */}
       {legs.length > 1 && (
         <Box sx={{ mt: 1 }}>
           {legs.slice(0, -1).map((leg, idx) => {
@@ -240,15 +236,14 @@ const FlightList: React.FC<FlightListProps> = ({
   maxPrice,
   setSelectedDepartureFlight,
   currentStep,
+  segments,
+  selectedFlights,
 }) => {
-  const departureFlights = filteredFlights.filter(
+  const isMultiCity = segments && segments.length > 1;
+  const segmentIndex = isMultiCity && currentStep.startsWith("segment-") ? parseInt(currentStep.split("-")[1]) : 0;
+  const segmentFlights = filteredFlights.filter(
     (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
   );
-  const returnFlights = selectedDepartureFlight
-    ? filteredFlights.filter(
-        (flight) => flight.trips[1]?.from === to && flight.trips[1]?.to === from
-      )
-    : [];
 
   return (
     <Grid container spacing={3}>
@@ -282,18 +277,45 @@ const FlightList: React.FC<FlightListProps> = ({
           ) : (
             <CircularProgress sx={{ display: "block", margin: "0 auto" }} />
           )
+        ) : isMultiCity && currentStep.startsWith("segment-") ? (
+          <Stack spacing={2}>
+            <Typography variant="h5" fontWeight={600}>
+              Choose Flight for Segment {segmentIndex + 1}: {getCityName(from)} to {getCityName(to)}
+            </Typography>
+            {segmentFlights.length === 0 ? (
+              <Typography variant="body1" color="text.secondary">
+                No flights available for this segment. Try adjusting your filters.
+              </Typography>
+            ) : (
+              segmentFlights.map((flight, idx) => (
+                <FlightCard
+                  key={idx}
+                  flight={flight}
+                  tripIndex={0}
+                  onSelect={() => handleDepartureSelect(flight)}
+                />
+              ))
+            )}
+            {segmentIndex > 0 && (
+              <Button
+                variant="outlined"
+                onClick={() => setSelectedDepartureFlight && setSelectedDepartureFlight(null)}
+              >
+                Change Previous Segment
+              </Button>
+            )}
+          </Stack>
         ) : !selectedDepartureFlight ? (
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Departure Flight from {getCityName(from)} to{" "}
-              {getCityName(to)}
+              Choose Your Departure Flight from {getCityName(from)} to {getCityName(to)}
             </Typography>
-            {departureFlights.length === 0 ? (
+            {segmentFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
                 No departure flights available. Try adjusting your filters.
               </Typography>
             ) : (
-              departureFlights.map((flight, idx) => (
+              segmentFlights.map((flight, idx) => (
                 <FlightCard
                   key={idx}
                   flight={flight}
@@ -306,15 +328,14 @@ const FlightList: React.FC<FlightListProps> = ({
         ) : (
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Return Flight from {getCityName(to)} to{" "}
-              {getCityName(from)}
+              Choose Your Return Flight from {getCityName(to)} to {getCityName(from)}
             </Typography>
-            {returnFlights.length === 0 ? (
+            {segmentFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
                 No return flights available. Try adjusting your filters.
               </Typography>
             ) : (
-              returnFlights.map((flight, idx) => (
+              segmentFlights.map((flight, idx) => (
                 <FlightCard
                   key={idx}
                   flight={flight}
@@ -325,10 +346,7 @@ const FlightList: React.FC<FlightListProps> = ({
             )}
             <Button
               variant="outlined"
-              onClick={() =>
-                setSelectedDepartureFlight &&
-                setSelectedDepartureFlight(null)
-              }
+              onClick={() => setSelectedDepartureFlight && setSelectedDepartureFlight(null)}
             >
               Change Departure Flight
             </Button>

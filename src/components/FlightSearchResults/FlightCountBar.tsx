@@ -14,7 +14,7 @@ import {
   Collapse,
 } from "@mui/material";
 import {
-  Airplay as AirplaneIcon,
+  AirplanemodeActive as AirplaneIcon,
   FilterList as FilterListIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
@@ -31,6 +31,7 @@ interface FlightCountBarProps {
   setExpandedFilters: (value: boolean) => void;
   isOneWay: boolean;
   selectedDepartureFlight: any;
+  isMultiCity: boolean;
 }
 
 const FlightCountBar: React.FC<FlightCountBarProps> = ({
@@ -43,8 +44,21 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
   setExpandedFilters,
   isOneWay,
   selectedDepartureFlight,
+  isMultiCity,
 }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
+  const currentStep = isMultiCity ? window.location.pathname.split("/").pop() || "segment-0" : "";
+
+  const getFlightCountMessage = () => {
+    if (isMultiCity && currentStep.startsWith("segment-")) {
+      const segmentIndex = parseInt(currentStep.split("-")[1]) + 1;
+      return `Segment ${segmentIndex} flights`;
+    }
+    if (!isOneWay && selectedDepartureFlight) {
+      return "Recommended returning flights";
+    }
+    return `${count} flights found`;
+  };
 
   return (
     <Box
@@ -75,11 +89,7 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
         <Box display="flex" alignItems="center" gap={1.2}>
           <AirplaneIcon color="primary" fontSize="small" />
           <Typography fontWeight={700}>
-            {isOneWay
-              ? `${count} flights found`
-              : selectedDepartureFlight
-              ? "Recommended returning flights"
-              : `${count} flights found`}
+            {getFlightCountMessage()}
           </Typography>
           <Chip
             label={`${count}`}

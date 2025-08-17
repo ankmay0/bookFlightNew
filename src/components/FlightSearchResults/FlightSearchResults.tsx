@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Box, Paper, Typography, Button, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, CircularProgress, Alert, Paper, Button } from "@mui/material";
 import { AirplanemodeActive as AirplaneIcon } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Flight } from "../Types/FlightTypes";
 import Lottie from "lottie-react";
 import FlightList from "./FlightList";
+import { TripReviewProps } from "../Types/TripReviewProps";
 import TripReview from "./TripReview";
 import TripSummary from "./TripSummary";
 import FlightCountBar from "./FlightCountBar";
 import BookingSteps from "./BookingSteps";
 
-export type BookingStep = "departure" | "return" | "review";
+export type BookingStep = "departure" | "return" | "review" | `segment-${number}`;
 
 const airlinesData: { [key: string]: { name: string; icon: string } } = {
   DL: { name: "Delta Air Lines", icon: "https://content.airhex.com/content/logos/airlines_DL_75_75_s.png" },
@@ -62,6 +63,7 @@ const calculateFlightDuration = (flight: Flight): number => {
 
 const FlightSearchResults: React.FC = () => {
   const [flights, setFlights] = useState<Flight[]>([]);
+  const [segmentFlights, setSegmentFlights] = useState<Flight[][]>([]);
   const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,15 +79,17 @@ const FlightSearchResults: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState(0);
   const [lottieJson, setLottieJson] = useState<any>(null);
   const [selectedDepartureFlight, setSelectedDepartureFlight] = useState<Flight | null>(null);
-  const [expandedFilters, setExpandedFilters] = useState<boolean>(false);
   const [selectedReturnFlight, setSelectedReturnFlight] = useState<Flight | null>(null);
+  const [selectedFlights, setSelectedFlights] = useState<(Flight | null)[]>([]);
+  const [expandedFilters, setExpandedFilters] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<BookingStep>("departure");
 
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state || {};
-  const { from, to, departDate, returnDate, adults, children, fromDetails, toDetails, tripType } = state;
+  const { from, to, departDate, returnDate, adults, children, fromDetails, toDetails, tripType, segments } = state;
   const isOneWay = tripType === "oneway" || !returnDate;
+  const isMultiCity = tripType === "multi";
 
   useEffect(() => {
     fetch("/animation.json")
@@ -95,60 +99,140 @@ const FlightSearchResults: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!from || !to || !departDate || (!adults && !children)) {
-      setError("Missing search parameters. Please try again.");
-      setLoading(false);
-      return;
-    }
-    const adt = adults || 0,
-      chd = children || 0;
-    let url = `http://localhost:8080/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
-    if (adt) url += `&adults=${adt}`;
-    if (chd) url += `&children=${chd}`;
-    if (returnDate && !isOneWay) url += `&returnDate=${returnDate}`;
-    setLoading(true);
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(
-            res.status === 400
-              ? "Invalid search parameters."
-              : res.status === 500
-              ? "Server error. Please try again later."
-              : `HTTP error ${res.status}`
-          );
+    if (isMultiCity) {
+      if (!segments || !Array.isArray(segments) || segments.length < 2) {
+        setError("Invalid multi-city search parameters. Please try again.");
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const fetchPromises = segments.map((seg: { from: string; to: string; date: string }) => {
+        if (!seg.from || !seg.to || !seg.date || (!adults && !children)) {
+          return Promise.reject(new Error(`Missing parameters for segment: ${JSON.stringify(seg)}`));
         }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("Flight search response:", data);
-        let flightsArr: Flight[] = Array.isArray(data.flightsAvailable) ? data.flightsAvailable : [];
-        setFlights(flightsArr);
-        setFilteredFlights(flightsArr);
-        const prices = flightsArr.map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
-        setMinPrice(Math.min(...prices) || 200);
-        setMaxPrice(Math.max(...prices) || 150000);
-        const stopsSet = new Set<string>(),
-          airlinesSet = new Set<string>();
-        flightsArr.forEach((f) => {
-          stopsSet.add(mapStopsToLabel(f.trips?.[0]?.stops));
-          f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
+        const adt = adults || 0,
+          chd = children || 0;
+        let url = `http://localhost:8080/flights/search?originLocationCode=${seg.from}&destinationLocationCode=${seg.to}&departureDate=${seg.date}&currencyCode=INR`;
+        if (adt) url += `&adults=${adt}`;
+        if (chd) url += `&children=${chd}`;
+        return fetch(url).then((res) => {
+          if (!res.ok) {
+            throw new Error(
+              res.status === 400
+                ? `Invalid parameters for segment ${seg.from} to ${seg.to}.`
+                : res.status === 500
+                ? "Server error. Please try again later."
+                : `HTTP error ${res.status}`
+            );
+          }
+          return res.json();
         });
-        setAvailableStops(Array.from(stopsSet));
-        setAvailableAirlines(Array.from(airlinesSet));
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Flight search error:", err);
-        setError(err.message || "Failed to fetch flights. Please try again.");
-        setFlights([]);
-        setFilteredFlights([]);
-        setLoading(false);
       });
-  }, [from, to, departDate, returnDate, adults, children, isOneWay]);
+
+      Promise.allSettled(fetchPromises)
+        .then((results) => {
+          const segmentFlightsArray: Flight[][] = [];
+          const errors: string[] = [];
+          results.forEach((result, idx) => {
+            if (result.status === "fulfilled") {
+              const flightsArr: Flight[] = Array.isArray(result.value.flightsAvailable) ? result.value.flightsAvailable : [];
+              segmentFlightsArray.push(flightsArr);
+            } else {
+              errors.push(`Segment ${idx + 1}: ${result.reason.message}`);
+              segmentFlightsArray.push([]);
+            }
+          });
+          setSegmentFlights(segmentFlightsArray);
+          setSelectedFlights(new Array(segments.length).fill(null));
+          setFilteredFlights(segmentFlightsArray[0] || []);
+          const prices = segmentFlightsArray.flat().map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
+          setMinPrice(prices.length ? Math.min(...prices) : 200);
+          setMaxPrice(prices.length ? Math.max(...prices) : 150000);
+          const stopsSet = new Set<string>(),
+            airlinesSet = new Set<string>();
+          segmentFlightsArray.flat().forEach((f) => {
+            stopsSet.add(mapStopsToLabel(f.trips?.[0]?.stops));
+            f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
+          });
+          setAvailableStops(Array.from(stopsSet));
+          setAvailableAirlines(Array.from(airlinesSet));
+          setError(errors.length ? errors.join("; ") : null);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err.message || "Failed to fetch multi-city flights. Please try again.");
+          setSegmentFlights([]);
+          setFilteredFlights([]);
+          setLoading(false);
+        });
+    } else {
+      if (!from || !to || !departDate || (!adults && !children)) {
+        setError("Missing search parameters. Please try again.");
+        setLoading(false);
+        return;
+      }
+      const adt = adults || 0,
+        chd = children || 0;
+      let url = `http://localhost:8080/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
+      if (adt) url += `&adults=${adt}`;
+      if (chd) url += `&children=${chd}`;
+      if (returnDate && !isOneWay) url += `&returnDate=${returnDate}`;
+      setLoading(true);
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(
+              res.status === 400
+                ? "Invalid search parameters."
+                : res.status === 500
+                ? "Server error. Please try again later."
+                : `HTTP error ${res.status}`
+            );
+          }
+          return res.json();
+        })
+        .then((data) => {
+          console.log("Flight search response:", data);
+          let flightsArr: Flight[] = Array.isArray(data.flightsAvailable) ? data.flightsAvailable : [];
+          setFlights(flightsArr);
+          setFilteredFlights(flightsArr);
+          const prices = flightsArr.map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
+          setMinPrice(prices.length ? Math.min(...prices) : 200);
+          setMaxPrice(prices.length ? Math.max(...prices) : 150000);
+          const stopsSet = new Set<string>(),
+            airlinesSet = new Set<string>();
+          flightsArr.forEach((f) => {
+            stopsSet.add(mapStopsToLabel(f.trips?.[0]?.stops));
+            f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
+          });
+          setAvailableStops(Array.from(stopsSet));
+          setAvailableAirlines(Array.from(airlinesSet));
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Flight search error:", err);
+          setError(err.message || "Failed to fetch flights. Please try again.");
+          setFlights([]);
+          setFilteredFlights([]);
+          setLoading(false);
+        });
+    }
+  }, [from, to, departDate, returnDate, adults, children, isOneWay, isMultiCity, segments]);
 
   useEffect(() => {
-    let updated = flights.filter((flight) => {
+    let updated: Flight[] = [];
+    if (isMultiCity && currentStep !== "review") {
+      const segmentIndex = currentStep.startsWith("segment-") ? parseInt(currentStep.split("-")[1]) : 0;
+      if (segmentFlights && Array.isArray(segmentFlights) && segmentFlights[segmentIndex]) {
+        updated = segmentFlights[segmentIndex];
+      }
+    } else {
+      updated = flights;
+    }
+
+    console.log("Filtering flights:", { isMultiCity, currentStep, segmentFlights, flights, updated });
+
+    updated = updated.filter((flight) => {
       const price = parseFloat(flight.totalPrice || flight.basePrice || "0") || 0;
       const airlineList = flight.trips.flatMap((t) => t.legs.map((l) => l.operatingCarrierCode));
       if (price < priceRange[0] || price > priceRange[1]) return false;
@@ -188,28 +272,19 @@ const FlightSearchResults: React.FC = () => {
         break;
     }
     setFilteredFlights(Array.isArray(updated) ? updated : []);
-  }, [priceRange, selectedTimes, selectedStops, selectedAirlines, sortBy, flights]);
+  }, [priceRange, selectedTimes, selectedStops, selectedAirlines, sortBy, flights, segmentFlights, currentStep, isMultiCity]);
 
-  const count = isOneWay
-    ? filteredFlights.filter((f) => f.trips?.[0]?.from === from && f.trips?.[0]?.to === to).length
-    : selectedDepartureFlight
-    ? filteredFlights.filter((f) => f.trips[1]?.from === to && f.trips[1]?.to === from).length
-    : filteredFlights.filter((f) => f.trips?.[0]?.from === from && f.trips?.[0]?.to === to).length;
-
-  const handleDepartureSelect = (flight: Flight) => {
-    setSelectedDepartureFlight(flight);
-    if (isOneWay) {
-      navigate("/passenger-details", {
-        state: {
-          flight: {
-            ...flight,
-            trips: [flight.trips[0]],
-          },
-          passengers: (adults || 0) + (children || 0),
-        },
-      });
+  const handleSegmentSelect = (flight: Flight, segmentIndex: number) => {
+    setSelectedFlights((prev) => {
+      const newSelected = [...prev];
+      newSelected[segmentIndex] = flight;
+      return newSelected;
+    });
+    if (segmentIndex + 1 < segments.length) {
+      setCurrentStep(`segment-${segmentIndex + 1}`);
+      setFilteredFlights(segmentFlights[segmentIndex + 1] || []);
     } else {
-      setCurrentStep("return");
+      setCurrentStep("review");
     }
   };
 
@@ -255,21 +330,23 @@ const FlightSearchResults: React.FC = () => {
       >
         <Box sx={{ flex: { xs: "1 1 auto", md: "0 1 640px" }, minWidth: 0 }}>
           <TripSummary
-            from={from}
-            to={to}
-            departDate={departDate}
+            from={isMultiCity ? segments[0]?.from : from}
+            to={isMultiCity ? segments[segments.length - 1]?.to : to}
+            departDate={isMultiCity ? segments[0]?.date : departDate}
             returnDate={returnDate}
             adults={adults}
             children={children}
-            fromDetails={fromDetails}
-            toDetails={toDetails}
+            fromDetails={fromDetails || {}}
+            toDetails={toDetails || {}}
             loading={loading}
             isOneWay={isOneWay}
+            isMultiCity={isMultiCity}
+            segments={isMultiCity ? segments : undefined}
           />
         </Box>
         <Box sx={{ flex: { xs: "1 1 auto", md: "0 0 auto" }, minWidth: 0, alignSelf: { xs: "auto", md: "center" } }}>
           <FlightCountBar
-            count={count}
+            count={filteredFlights.length}
             sortBy={sortBy}
             setSortBy={setSortBy}
             showFilters={showFilters}
@@ -278,6 +355,7 @@ const FlightSearchResults: React.FC = () => {
             setExpandedFilters={setExpandedFilters}
             isOneWay={isOneWay}
             selectedDepartureFlight={selectedDepartureFlight}
+            isMultiCity={isMultiCity}
           />
         </Box>
       </Box>
@@ -290,22 +368,57 @@ const FlightSearchResults: React.FC = () => {
         </Box>
       )}
 
-      {currentStep === "review" ? (
+      {currentStep === "review" && isMultiCity ? (
+        <TripReview
+          departureFlight={selectedFlights[0]!}
+          returnFlight={null}
+          multiCityFlights={selectedFlights as Flight[]}
+          passengers={(adults || 0) + (children || 0)}
+          from={segments[0]?.from}
+          to={segments[segments.length - 1]?.to}
+          fromDetails={fromDetails || {}}
+          toDetails={toDetails || {}}
+          onBack={() => setCurrentStep(`segment-${segments.length - 1}`)}
+          onConfirm={() =>
+            navigate("/passenger-details", {
+              state: {
+                flight: {
+                  trips: selectedFlights.map((flight, idx) => ({
+                    from: segments[idx].from,
+                    to: segments[idx].to,
+                    legs: flight!.trips[0].legs,
+                    stops: flight!.trips[0].stops,
+                  })),
+                  totalPrice: selectedFlights.reduce((sum, f) => sum + (parseFloat(f!.totalPrice) || 0), 0).toString(),
+                  oneWay: true,
+                  seatsAvailable: selectedFlights[0]?.seatsAvailable || 0,
+                  currencyCode: "INR",
+                  basePrice: selectedFlights.reduce((sum, f) => sum + (parseFloat(f!.basePrice || "0") || 0), 0).toString(),
+                },
+                passengers: (adults || 0) + (children || 0),
+              },
+            })
+          }
+        />
+      ) : currentStep === "review" ? (
         <TripReview
           departureFlight={selectedDepartureFlight!}
-          returnFlight={selectedReturnFlight!}
+          returnFlight={selectedReturnFlight}
           passengers={(adults || 0) + (children || 0)}
           from={from}
           to={to}
-          fromDetails={fromDetails}
-          toDetails={toDetails}
+          fromDetails={fromDetails || {}}
+          toDetails={toDetails || {}}
           onBack={() => setCurrentStep("return")}
           onConfirm={() =>
             navigate("/passenger-details", {
               state: {
                 flight: {
                   ...selectedDepartureFlight,
-                  trips: [selectedDepartureFlight!.trips[0], selectedReturnFlight!.trips[1]],
+                  trips: [
+                    selectedDepartureFlight!.trips[0],
+                    ...(selectedReturnFlight ? [selectedReturnFlight.trips[0]] : []),
+                  ],
                 },
                 passengers: (adults || 0) + (children || 0),
               },
@@ -323,8 +436,10 @@ const FlightSearchResults: React.FC = () => {
             to={to}
             isOneWay={isOneWay}
             getAirlineName={getAirlineName}
+            isMultiCity={isMultiCity}
+            segments={isMultiCity ? segments : undefined}
+            selectedFlights={isMultiCity ? selectedFlights : undefined}
           />
-
           {!loading && filteredFlights.length === 0 && (
             <Paper
               sx={{
@@ -358,16 +473,34 @@ const FlightSearchResults: React.FC = () => {
               </Button>
             </Paper>
           )}
-
           <FlightList
             loading={loading}
             lottieJson={lottieJson}
             filteredFlights={filteredFlights}
             selectedDepartureFlight={selectedDepartureFlight}
-            from={from}
-            to={to}
+            from={isMultiCity ? segments[parseInt(currentStep.split("-")[1])]?.from : from}
+            to={isMultiCity ? segments[parseInt(currentStep.split("-")[1])]?.to : to}
             showFilters={showFilters}
-            handleDepartureSelect={handleDepartureSelect}
+            handleDepartureSelect={(flight) => {
+              if (isMultiCity) {
+                handleSegmentSelect(flight, parseInt(currentStep.split("-")[1]));
+              } else {
+                setSelectedDepartureFlight(flight);
+                if (isOneWay) {
+                  navigate("/passenger-details", {
+                    state: {
+                      flight: {
+                        ...flight,
+                        trips: [flight.trips[0]],
+                      },
+                      passengers: (adults || 0) + (children || 0),
+                    },
+                  });
+                } else {
+                  setCurrentStep("return");
+                }
+              }
+            }}
             handleConfirmSelection={(flight) => {
               setSelectedReturnFlight(flight);
               setCurrentStep("review");
@@ -387,6 +520,8 @@ const FlightSearchResults: React.FC = () => {
             maxPrice={maxPrice}
             setSelectedDepartureFlight={setSelectedDepartureFlight}
             currentStep={currentStep}
+            segments={isMultiCity ? segments : undefined}
+            selectedFlights={isMultiCity ? selectedFlights : undefined}
           />
         </>
       )}

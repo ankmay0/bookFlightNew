@@ -14,6 +14,8 @@ interface TripSummaryProps {
   toDetails?: { label?: string; name?: string };
   loading: boolean;
   isOneWay: boolean;
+  isMultiCity?: boolean;
+  segments?: Array<{ from: string; to: string; date: string }>;
 }
 
 const TripSummary: React.FC<TripSummaryProps> = ({
@@ -27,6 +29,8 @@ const TripSummary: React.FC<TripSummaryProps> = ({
   toDetails,
   loading,
   isOneWay,
+  isMultiCity,
+  segments,
 }) => {
   const navigate = useNavigate();
   const fd = fromDetails || {};
@@ -89,50 +93,91 @@ const TripSummary: React.FC<TripSummaryProps> = ({
           }}
         >
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ flex: 1, minWidth: 0 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                px: 2,
-                py: 1,
-                bgcolor: "white",
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow: "none",
-              }}
-            >
-              <FlightTakeoff sx={{ fontSize: 20, color: "primary.main" }} />
-              <Typography fontWeight={600} fontSize="0.95rem" noWrap>
-                {fd.label || fd.name || from} → {td.label || td.name || to}
-              </Typography>
-            </Box>
-
-            <Chip
-              icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
-              label={
-                returnDate && !isOneWay
-                  ? `${new Date(departDate).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                    })} - ${new Date(returnDate).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                    })}`
-                  : new Date(departDate).toLocaleDateString("en-GB", {
+            {isMultiCity && segments && segments.length > 0 ? (
+              segments.map((segment, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 2,
+                    py: 1,
+                    bgcolor: "white",
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    boxShadow: "none",
+                    mb: 1,
+                  }}
+                >
+                  <FlightTakeoff sx={{ fontSize: 20, color: "primary.main" }} />
+                  <Typography fontWeight={600} fontSize="0.95rem" noWrap>
+                    Segment {index + 1}: {segment.from} → {segment.to}
+                  </Typography>
+                  <Chip
+                    icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                    label={new Date(segment.date).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
-                    })
-              }
-              size="small"
-              variant="outlined"
-              sx={{
-                fontWeight: 500,
-                fontSize: "0.8rem",
-              }}
-            />
+                    })}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 500,
+                      fontSize: "0.8rem",
+                      ml: 1,
+                    }}
+                  />
+                </Box>
+              ))
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                  bgcolor: "white",
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: "none",
+                }}
+              >
+                <FlightTakeoff sx={{ fontSize: 20, color: "primary.main" }} />
+                <Typography fontWeight={600} fontSize="0.95rem" noWrap>
+                  {fd.label || fd.name || from} → {td.label || td.name || to}
+                </Typography>
+                <Chip
+                  icon={<ScheduleIcon sx={{ fontSize: 18 }} />}
+                  label={
+                    returnDate && !isOneWay
+                      ? `${new Date(departDate).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })} - ${new Date(returnDate).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })}`
+                      : new Date(departDate).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
+                  }
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontWeight: 500,
+                    fontSize: "0.8rem",
+                    ml: 1,
+                  }}
+                />
+              </Box>
+            )}
           </Stack>
 
           <Box

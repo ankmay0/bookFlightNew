@@ -53,7 +53,8 @@ const calculateFlightDuration = (flight: Flight) => {
 
 interface TripReviewProps {
   departureFlight: Flight;
-  returnFlight: Flight;
+  returnFlight?: Flight | null;
+  multiCityFlights?: Flight[];
   passengers: number;
   from: string;
   to: string;
@@ -61,20 +62,24 @@ interface TripReviewProps {
   toDetails: any;
   onBack: () => void;
   onConfirm: () => void;
+  segments?: Array<{ from: string; to: string; date: string }>;
 }
 
 const TripReview: React.FC<TripReviewProps> = ({
   departureFlight,
   returnFlight,
+  multiCityFlights,
   passengers,
   from,
   to,
+  onBack,
   onConfirm,
+  segments,
 }) => {
-  const departureLeg = departureFlight.trips[0].legs[0];
-  const returnLeg = returnFlight.trips[0].legs[0];
-  const totalPrice =
-    parseFloat(departureFlight.totalPrice) + parseFloat(returnFlight.totalPrice);
+  const isMultiCity = !!multiCityFlights && multiCityFlights.length > 0 && !!segments;
+  const totalPrice = isMultiCity
+    ? multiCityFlights.reduce((sum, flight) => sum + (parseFloat(flight?.totalPrice || "0") || 0), 0)
+    : parseFloat(departureFlight.totalPrice) + (returnFlight ? parseFloat(returnFlight.totalPrice) : 0);
 
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -86,11 +91,13 @@ const TripReview: React.FC<TripReviewProps> = ({
     toCity,
     leg,
     flight,
+    segmentIndex,
   }: {
     fromCity: string;
     toCity: string;
     leg: any;
     flight: Flight;
+    segmentIndex?: number;
   }) => (
     <Paper
       elevation={1}
@@ -102,7 +109,9 @@ const TripReview: React.FC<TripReviewProps> = ({
       }}
     >
       <Typography sx={{ fontSize: 18, fontWeight: 600, mb: 0.5 }}>
-        {fromCity} → {toCity}
+        {isMultiCity && segmentIndex !== undefined
+          ? `Segment ${segmentIndex + 1}: ${fromCity} → ${toCity}`
+          : `${fromCity} → ${toCity}`}
       </Typography>
       <Typography sx={{ fontSize: 15, color: "text.secondary", mb: 1.5 }}>
         {formatTime(leg.departureDateTime)} - {formatTime(leg.arrivalDateTime)} ·{" "}
@@ -127,21 +136,40 @@ const TripReview: React.FC<TripReviewProps> = ({
     <Grid container spacing={3}>
       {/* Left column */}
       <Grid item xs={12} md={8}>
-        <FlightCard
-          fromCity={airportCityMap[from] || from}
-          toCity={airportCityMap[to] || to}
-          leg={departureLeg}
-          flight={departureFlight}
-        />
-        <FlightCard
-          fromCity={airportCityMap[to] || to}
-          toCity={airportCityMap[from] || from}
-          leg={returnLeg}
-          flight={returnFlight}
-        />
+        {isMultiCity ? (
+          multiCityFlights.map((flight, index) => (
+            flight && (
+              <FlightCard
+                key={index}
+                fromCity={airportCityMap[segments![index].from] || segments![index].from}
+                toCity={airportCityMap[segments![index].to] || segments![index].to}
+                leg={flight.trips[0].legs[0]}
+                flight={flight}
+                segmentIndex={index}
+              />
+            )
+          ))
+        ) : (
+          <>
+            <FlightCard
+              fromCity={airportCityMap[from] || from}
+              toCity={airportCityMap[to] || to}
+              leg={departureFlight.trips[0].legs[0]}
+              flight={departureFlight}
+            />
+            {returnFlight && (
+              <FlightCard
+                fromCity={airportCityMap[to] || to}
+                toCity={airportCityMap[from] || from}
+                leg={returnFlight.trips[0].legs[0]}
+                flight={returnFlight}
+              />
+            )}
+          </>
+        )}
         <CarBunddle />
       </Grid>
-      
+
       {/* Right column */}
       <Grid item xs={12} md={4}>
         <Paper
@@ -195,13 +223,24 @@ const TripReview: React.FC<TripReviewProps> = ({
           >
             Check Out
           </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            sx={{
+              textTransform: "none",
+              fontSize: 16,
+              py: 1.2,
+              borderRadius: 2,
+              fontWeight: 600,
+              mt: 1,
+            }}
+            onClick={onBack}
+          >
+            Back
+          </Button>
         </Paper>
-        
       </Grid>
-      
     </Grid>
-
-    
   );
 };
 
