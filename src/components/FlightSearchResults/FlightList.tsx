@@ -30,6 +30,8 @@ const airlinesData: { [key: string]: { name: string; icon: string } } = {
   HA: { name: "Hawaiian Airlines", icon: "https://content.airhex.com/content/logos/airlines_HA_75_75_s.png" },
 };
 
+
+
 const getAirlineName = (code: string): string =>
   airlinesData[code as keyof typeof airlinesData]?.name || code;
 
@@ -299,6 +301,28 @@ const FlightList: React.FC<FlightListProps> = ({
   const segmentFlights = filteredFlights.filter(
     (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
   );
+  // In FlightList.tsx, add this before the return statement
+const countFlightsByStops = (flights: Flight[]) => {
+  const counts = {
+    "Non-stop": 0,
+    "1 stop": 0,
+    "2+ stops": 0
+  };
+
+  flights.forEach(flight => {
+    // For each flight, look at all trips (outbound and return)
+    flight.trips.forEach(trip => {
+      const stops = trip.stops || 0;
+      if (stops === 0) counts["Non-stop"]++;
+      else if (stops === 1) counts["1 stop"]++;
+      else if (stops >= 2) counts["2+ stops"]++;
+    });
+  });
+
+  return counts;
+};
+
+const stopCounts = countFlightsByStops(filteredFlights);
 
   return (
     <Grid container spacing={3}>
@@ -317,6 +341,7 @@ const FlightList: React.FC<FlightListProps> = ({
             availableAirlines={availableAirlines}
             minPrice={minPrice}
             maxPrice={maxPrice}
+            stopCounts={stopCounts}
           />
         </Grid>
       )}

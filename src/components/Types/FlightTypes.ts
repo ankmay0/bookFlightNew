@@ -75,4 +75,9 @@ export interface SidebarFiltersProps {
     availableAirlines: string[];
     minPrice: number;
     maxPrice: number;
+     stopCounts?: {
+    "Non-stop": number;
+    "1 stop": number;
+    "2+ stops": number;
+  };
 }

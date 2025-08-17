@@ -46,10 +46,10 @@ const formatPrice = (price: string | number) => {
 };
 
 const mapStopsToLabel = (stops: number | undefined) => {
-  if (stops === 0) return "Direct";
+  if (stops === undefined || stops === null) return "Unknown";
+  if (stops === 0) return "Non-stop";
   if (stops === 1) return "1 stop";
-  if (stops && stops > 1) return `${stops} stops`;
-  return "Multiple stops";
+  return `${stops} stops`;
 };
 
 const calculateFlightDuration = (flight: Flight): number => {
