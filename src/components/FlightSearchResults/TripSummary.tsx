@@ -42,15 +42,16 @@ const TripSummary: React.FC<TripSummaryProps> = ({
   return (
     <Fade in={!loading} timeout={600}>
       <Box sx={{ mb: { xs: 2, md: 0 } }}>
+        {/* Heading + Edit Button */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "flex-start",
             alignItems: "center",
-            flexWrap: "wrap",
             gap: 1.5,
             mb: 2,
             px: { xs: 1.5, md: 0 },
+            flexWrap: "wrap",
           }}
         >
           <Typography variant="h6" fontWeight={600}>
@@ -75,6 +76,7 @@ const TripSummary: React.FC<TripSummaryProps> = ({
           </Button>
         </Box>
 
+        {/* Main Summary Box */}
         <Paper
           elevation={0}
           sx={{
@@ -84,15 +86,23 @@ const TripSummary: React.FC<TripSummaryProps> = ({
             border: "1px solid",
             borderColor: "divider",
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
+            flexDirection: "row", // ✅ Always horizontal
             alignItems: "center",
-            gap: 2.5,
+            justifyContent: "flex-start",
+            flexWrap: "wrap", // ✅ Allows wrapping if space is tight
+            gap: 2,
             boxShadow: "none",
-            maxWidth: 640,
+            maxWidth: "100%",
           }}
         >
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ flex: 1, minWidth: 0 }}>
+          {/* Segment(s) / Route Info */}
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            flexWrap="wrap"
+            sx={{ flex: 1, minWidth: 0 }}
+          >
             {isMultiCity && segments && segments.length > 0 ? (
               segments.map((segment, index) => (
                 <Box
@@ -108,7 +118,6 @@ const TripSummary: React.FC<TripSummaryProps> = ({
                     border: "1px solid",
                     borderColor: "divider",
                     boxShadow: "none",
-                    mb: 1,
                   }}
                 >
                   <FlightTakeoff sx={{ fontSize: 20, color: "primary.main" }} />
@@ -180,6 +189,7 @@ const TripSummary: React.FC<TripSummaryProps> = ({
             )}
           </Stack>
 
+          {/* Passenger Info */}
           <Box
             sx={{
               display: "flex",

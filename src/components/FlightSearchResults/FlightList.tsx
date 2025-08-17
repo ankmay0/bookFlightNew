@@ -90,6 +90,7 @@ interface FlightListProps {
   selectedFlights?: (Flight | null)[];
 }
 
+// ========================== FlightCard ==========================
 const FlightCard: React.FC<{
   flight: Flight;
   tripIndex: number;
@@ -116,65 +117,114 @@ const FlightCard: React.FC<{
       elevation={0}
       sx={{
         borderRadius: 1.5,
-        p: 1,
+        p: 1.5,
         backgroundColor: "#ffffff",
         border: "1px solid #ddd",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        minHeight: 140,
       }}
     >
-      <Grid container alignItems="center" justifyContent="space-between">
+      {/* Airline + Price */}
+      <Grid container justifyContent="space-between" alignItems="center">
         <Grid item>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <img
               src={getAirlineIconURL(firstLeg.operatingCarrierCode)}
               alt={getAirlineName(firstLeg.operatingCarrierCode)}
               style={{
-                height: 16,
-                width: 16,
+                height: 18,
+                width: 18,
                 borderRadius: 3,
                 background: "#fff",
               }}
             />
             <Typography variant="subtitle2" fontWeight={700}>
-              {getAirlineName(firstLeg.operatingCarrierCode)}{" "}
-              {firstLeg.flightNumber}
+              {getAirlineName(firstLeg.operatingCarrierCode)} {firstLeg.flightNumber}
             </Typography>
           </Box>
         </Grid>
-        <Grid item sx={{ display: "flex", gap: 1 }}>
-          <Typography
-            variant="subtitle2"
-            fontWeight={700}
-            sx={{ color: "green" }}
-          >
+        <Grid item>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ color: "green" }}>
             ₹{formatPrice(flight.totalPrice)}
           </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={onSelect}
-            sx={{ minHeight: 28, fontSize: 12 }}
-          >
-            Select
-          </Button>
         </Grid>
       </Grid>
 
       <Divider sx={{ my: 1 }} />
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", px: 1 }}>
-        <Box>
+      {/* Departure/Arrival/Line grouped on left */}
+      <Box sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        pl: 0.5
+      }}>
+        {/* DEPARTURE */}
+        <Box sx={{ textAlign: "left", minWidth: "fit-content" }}>
           <Typography fontWeight={700}>{prettyTime(firstLeg.departureDateTime)}</Typography>
           <Typography variant="caption">{cityText(firstLeg.departureAirport)}</Typography>
         </Box>
-        <Typography variant="body2" sx={{ alignSelf: "center" }}>
-          {trip.stops > 0 ? `${trip.stops} stop${trip.stops > 1 ? "s" : ""}` : "Non-stop"}
-        </Typography>
-        <Box sx={{ textAlign: "right" }}>
+        {/* LINE + STOP INFO */}
+        <Box sx={{
+          minWidth: 80,
+          textAlign: "center",
+          position: "relative"
+        }}>
+          <Box sx={{
+            position: "relative",
+            height: "2px",
+            background: "linear-gradient(to right, #1976d2, #42a5f5)",
+            borderRadius: "1px",
+            mb: 0.5,
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              left: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: "#1976d2",
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              right: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: "#42a5f5",
+            }
+          }} />
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+            {trip.stops > 0 ? `${trip.stops} stop${trip.stops > 1 ? "s" : ""}` : "Non-stop"}
+          </Typography>
+        </Box>
+        {/* ARRIVAL */}
+        <Box sx={{ textAlign: "left", minWidth: "fit-content" }}>
           <Typography fontWeight={700}>{prettyTime(lastLeg.arrivalDateTime)}</Typography>
           <Typography variant="caption">{cityText(lastLeg.arrivalAirport)}</Typography>
         </Box>
       </Box>
 
+      {/* Select button at bottom right */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={onSelect}
+          sx={{ minHeight: 32, fontSize: 13, borderRadius: 2 }}
+        >
+          SELECT
+        </Button>
+      </Box>
+
+      {/* Layovers if any */}
       {legs.length > 1 && (
         <Box sx={{ mt: 1 }}>
           {legs.slice(0, -1).map((leg, idx) => {
@@ -212,6 +262,8 @@ const FlightCard: React.FC<{
   );
 };
 
+
+// ========================== FlightList ==========================
 const FlightList: React.FC<FlightListProps> = ({
   loading,
   lottieJson,
@@ -240,7 +292,10 @@ const FlightList: React.FC<FlightListProps> = ({
   selectedFlights,
 }) => {
   const isMultiCity = segments && segments.length > 1;
-  const segmentIndex = isMultiCity && currentStep.startsWith("segment-") ? parseInt(currentStep.split("-")[1]) : 0;
+  const segmentIndex =
+    isMultiCity && currentStep.startsWith("segment-")
+      ? parseInt(currentStep.split("-")[1])
+      : 0;
   const segmentFlights = filteredFlights.filter(
     (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
   );
