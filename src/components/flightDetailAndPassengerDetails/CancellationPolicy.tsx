@@ -64,7 +64,7 @@ const CancellationPolicy: React.FC<CancellationPolicyProps> = ({
           boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
           bgcolor: "#fff",
           width: "100%",
-          maxWidth: 1200,
+          maxWidth: 1400,
           mx: "auto",
           my: 2,
         }}
