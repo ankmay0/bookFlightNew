@@ -63,7 +63,7 @@ const FlightCountHeader: React.FC<FlightCountHeaderProps> = ({
           border: "1px solid",
           borderColor: "divider",
           boxShadow: "none",
-          mt: 6,
+          mt: 2,
         }}
       >
         <Box display="flex" alignItems="center" gap={1.2}>

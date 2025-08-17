@@ -127,7 +127,7 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
-          sx={{ ml: { xs: 0.5, md: 0 }, flexWrap: "nowrap" }}
+          sx={{ ml: { xs: 0.5, md: 48 }, flexWrap: "nowrap" }}
         >
           {currentStep === "departure" ? (
             <>

@@ -10,12 +10,12 @@ interface TripSummaryProps {
   returnDate?: string;
   adults: number;
   children: number;
-  fromDetails?: { label?: string; name?: string };
-  toDetails?: { label?: string; name?: string };
+  fromDetails?: { label?: string; name?: string; code?: string };
+  toDetails?: { label?: string; name?: string; code?: string };
   loading: boolean;
   isOneWay: boolean;
   isMultiCity?: boolean;
-  segments?: Array<{ from: string; to: string; date: string }>;
+  segments?: Array<{ from: string; to: string; date: string; fromCode?: string; toCode?: string }>;
   flightCount?: number;
   sortBy?: string;
   onSortChange?: (value: string) => void;
@@ -47,6 +47,11 @@ const TripSummary: React.FC<TripSummaryProps> = ({
 
   if (loading) return null;
 
+  // Function to get flight code, fallback to original string if no code available
+  const getFlightCode = (details: any, fallback: string) => {
+    return details?.code || fallback;
+  };
+
   return (
     <Fade in={!loading} timeout={600}>
       <Paper
@@ -58,7 +63,7 @@ const TripSummary: React.FC<TripSummaryProps> = ({
           borderRadius: 2,
           border: "1px solid",
           borderColor: "divider",
-          mb: 2,
+          mb: 0,
         }}
       >
         {/* Main container with proper spacing */}
@@ -69,7 +74,7 @@ const TripSummary: React.FC<TripSummaryProps> = ({
             justifyContent: "space-between",
             flexWrap: { xs: "wrap", lg: "nowrap" },
             gap: 3,
-            minHeight: 56,
+            minHeight: 40,
           }}
         >
           {/* Left section - Search Summary + Edit */}
@@ -150,9 +155,9 @@ const TripSummary: React.FC<TripSummaryProps> = ({
               >
                 {isMultiCity && segments && segments.length > 0
                   ? segments.map((seg, idx) =>
-                      ` ${seg.from}→${seg.to}${idx < segments.length - 1 ? ',' : ''}`
+                      ` ${seg.fromCode || seg.from}→${seg.toCode || seg.to}${idx < segments.length - 1 ? ',' : ''}`
                     )
-                  : `${fd.label || fd.name || from} → ${td.label || td.name || to}`}
+                  : `${getFlightCode(fd, from)} → ${getFlightCode(td, to)}`}
               </Typography>
             </Box>
 

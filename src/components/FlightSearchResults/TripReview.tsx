@@ -133,7 +133,7 @@ const TripReview: React.FC<TripReviewProps> = ({
   );
 
   return (
-    <Grid container spacing={3}>
+    <Grid container spacing={3} >
       {/* Left column */}
       <Grid item xs={12} md={8}>
         {isMultiCity ? (

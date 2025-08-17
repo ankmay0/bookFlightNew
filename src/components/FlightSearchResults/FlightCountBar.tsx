@@ -83,7 +83,7 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
           border: "1px solid",
           borderColor: "divider",
           boxShadow: "none",
-          mt: 2,
+          mt: 0,
         }}
       >
         <Box display="flex" alignItems="center" gap={1.2}>
@@ -97,7 +97,7 @@ const FlightCountBar: React.FC<FlightCountBarProps> = ({
             color="primary"
             variant="outlined"
             sx={{ ml: 1, fontWeight: 600 }}
-          />
+          /><br />
         </Box>
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <FormControl size="small" sx={{ minWidth: 150 }}>

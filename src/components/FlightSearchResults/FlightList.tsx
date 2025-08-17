@@ -327,7 +327,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
   return (
     <Grid container spacing={3}>
       {showFilters && (
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={3} mt={-6}>
           <SidebarFilters
             priceRange={priceRange}
             setPriceRange={setPriceRange}
