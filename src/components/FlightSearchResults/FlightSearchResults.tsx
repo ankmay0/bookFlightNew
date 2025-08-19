@@ -121,8 +121,8 @@ const FlightSearchResults: React.FC = () => {
               res.status === 400
                 ? `Invalid parameters for segment ${seg.from} to ${seg.to}.`
                 : res.status === 500
-                ? "Server error. Please try again later."
-                : `HTTP error ${res.status}`
+                  ? "Server error. Please try again later."
+                  : `HTTP error ${res.status}`
             );
           }
           return res.json();
@@ -158,6 +158,7 @@ const FlightSearchResults: React.FC = () => {
           setAvailableAirlines(Array.from(airlinesSet));
           setError(errors.length ? errors.join("; ") : null);
           setLoading(false);
+
         })
         .catch((err) => {
           setError(err.message || "Failed to fetch multi-city flights. Please try again.");
@@ -185,8 +186,8 @@ const FlightSearchResults: React.FC = () => {
               res.status === 400
                 ? "Invalid search parameters."
                 : res.status === 500
-                ? "Server error. Please try again later."
-                : `HTTP error ${res.status}`
+                  ? "Server error. Please try again later."
+                  : `HTTP error ${res.status}`
             );
           }
           return res.json();
@@ -202,12 +203,22 @@ const FlightSearchResults: React.FC = () => {
           const stopsSet = new Set<string>(),
             airlinesSet = new Set<string>();
           flightsArr.forEach((f) => {
-            stopsSet.add(mapStopsToLabel(f.trips?.[0]?.stops));
+            f.trips?.forEach(trip => {
+              stopsSet.add(mapStopsToLabel(trip.stops));
+            });
             f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
           });
           setAvailableStops(Array.from(stopsSet));
           setAvailableAirlines(Array.from(airlinesSet));
           setLoading(false);
+          setAvailableStops(Array.from(stopsSet).sort((a, b) => {
+            // Sort stops in logical order: Non-stop, 1 stop, 2 stops, etc.
+            if (a === "Non-stop") return -1;
+            if (b === "Non-stop") return 1;
+            if (a === "1 stop") return -1;
+            if (b === "1 stop") return 1;
+            return parseInt(a) - parseInt(b);
+          }));
         })
         .catch((err) => {
           console.error("Flight search error:", err);
@@ -237,7 +248,12 @@ const FlightSearchResults: React.FC = () => {
       const airlineList = flight.trips.flatMap((t) => t.legs.map((l) => l.operatingCarrierCode));
       if (price < priceRange[0] || price > priceRange[1]) return false;
       if (selectedAirlines.length && !selectedAirlines.some((a) => airlineList.includes(a))) return false;
-      if (selectedStops.length && !selectedStops.includes(mapStopsToLabel(flight.trips?.[0]?.stops))) return false;
+       if (selectedStops.length) {
+    const tripStops = flight.trips.map(trip => mapStopsToLabel(trip.stops));
+    if (!selectedStops.some(stop => tripStops.includes(stop))) {
+      return false;
+    }
+  }
       if (selectedTimes.length) {
         const hour = new Date(flight.trips?.[0]?.legs?.[0]?.departureDateTime ?? "").getHours();
         const match = selectedTimes.some((time) => {

@@ -304,18 +304,17 @@ const FlightList: React.FC<FlightListProps> = ({
   // In FlightList.tsx, add this before the return statement
 const countFlightsByStops = (flights: Flight[]) => {
   const counts = {
-    "Non-stop": 0,
+    "2+ stops": 0,
     "1 stop": 0,
-    "2+ stops": 0
+    "Non-stop": 0,
   };
 
   flights.forEach(flight => {
-    // For each flight, look at all trips (outbound and return)
     flight.trips.forEach(trip => {
-      const stops = trip.stops || 0;
+      const stops = trip.stops ?? 0;
       if (stops === 0) counts["Non-stop"]++;
       else if (stops === 1) counts["1 stop"]++;
-      else if (stops >= 2) counts["2+ stops"]++;
+      else counts["2+ stops"]++;
     });
   });
 
