@@ -451,8 +451,8 @@ const FlightSearchResults: React.FC = () => {
             from={from}
             to={to}
             isOneWay={isOneWay}
-            getAirlineName={getAirlineName}
             isMultiCity={isMultiCity}
+            getAirlineIconURL={getAirlineIconURL}
             segments={isMultiCity ? segments : undefined}
             selectedFlights={isMultiCity ? selectedFlights : undefined}
           />

@@ -1,5 +1,12 @@
 import React from "react";
-import { Box, Breadcrumbs, Typography, Link } from "@mui/material";
+import {
+  Box,
+  Breadcrumbs,
+  Typography,
+  Link,
+  Chip,
+  Avatar,
+} from "@mui/material";
 import { NavigateNext as NavigateNextIcon } from "@mui/icons-material";
 import { Flight } from "../Types/FlightTypes";
 import { BookingStep } from "./FlightSearchResults";
@@ -12,7 +19,7 @@ interface BookingStepsProps {
   from: string;
   to: string;
   isOneWay: boolean;
-  getAirlineName: (code: string) => string;
+  getAirlineIconURL: (code: string) => string;
   isMultiCity?: boolean;
   segments?: Array<{ from: string; to: string; date: string }>;
   selectedFlights?: (Flight | null)[];
@@ -26,37 +33,42 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
   from,
   to,
   isOneWay,
-  getAirlineName,
+  getAirlineIconURL,
   isMultiCity,
   segments,
   selectedFlights,
 }) => {
   if (isOneWay) return null;
 
-  const highlight = {
-    fontWeight: 700,
-    px: 1.5,
-    py: 0.5,
-    borderRadius: 1.5,
-    transition: ".18s",
-    bgcolor: "white",
+  const activeChip = {
+    fontWeight: 600,
+    bgcolor: "primary.light",
     color: "primary.main",
     border: "1px solid",
-    borderColor: "divider",
-    boxShadow: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    whiteSpace: "nowrap",
+    borderColor: "primary.main",
   };
 
-  const inactive = {
-    color: "text.disabled",
-    px: 1.5,
-    py: 0.5,
-    display: "inline-flex",
-    alignItems: "center",
-    whiteSpace: "nowrap",
+  const inactiveChip = {
+    bgcolor: "grey.100",
+    color: "text.secondary",
   };
+
+  const renderLogoLabel = (carrierCode?: string, routeText?: string) => (
+    <Box display="flex" alignItems="center" gap={1}>
+      {carrierCode && (
+        <Avatar
+          src={getAirlineIconURL(carrierCode)}
+          alt="airline-logo"
+          sx={{ width: 24, height: 24, bgcolor: "transparent" }}
+        />
+      )}
+      {routeText && (
+        <Typography variant="body2" fontWeight={500}>
+          {routeText}
+        </Typography>
+      )}
+    </Box>
+  );
 
   const renderMultiCitySteps = () => {
     if (!isMultiCity || !segments || !selectedFlights) return null;
@@ -70,33 +82,45 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
-          sx={{ ml: { xs: 0.5, md: 0 }, flexWrap: "nowrap" }}
+          sx={{ flexWrap: "wrap" }}
         >
           {segments.map((segment, index) => {
             const flight = selectedFlights[index];
-            const isActive = currentStep === `segment-${index}` || (currentStep === "review" && index < segments.length);
+            const isActive =
+              currentStep === `segment-${index}` ||
+              (currentStep === "review" && index < segments.length);
+
             const label = flight
-              ? `${getAirlineName(flight.trips[0].legs[0].operatingCarrierCode)} · ${segment.from} → ${segment.to}`
-              : `Segment ${index + 1}: ${segment.from} → ${segment.to}`;
+              ? renderLogoLabel(
+                flight.trips[0].legs[0].operatingCarrierCode,
+                `${segment.from} → ${segment.to}`
+              )
+              : `${segment.from} → ${segment.to}`;
 
             return (
-              <Typography
+              <Chip
                 key={index}
-                sx={isActive ? highlight : inactive}
-              >
-                {label}
-              </Typography>
+                label={label}
+                clickable
+                sx={{
+                  ... (isActive ? activeChip : inactiveChip),
+                  "& .MuiChip-label": {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",   // ✅ space between logo & text
+                  },
+                }}
+              />
             );
           })}
-          <Typography
-            sx={currentStep === "review" ? highlight : inactive}
-          >
-            Review your trip
-          </Typography>
+          <Chip
+            label="Review your trip"
+            sx={currentStep === "review" ? activeChip : inactiveChip}
+          />
         </Breadcrumbs>
 
         {(currentStep === "review" || currentStep.startsWith("segment-")) && (
-          <Box sx={{ mt: 0.5, display: "flex", flexWrap: "wrap", gap: 3 }}>
+          <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 2 }}>
             {segments.map((_, index) => {
               if (index <= currentSegmentIndex && selectedFlights[index]) {
                 return (
@@ -104,7 +128,7 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
                     key={index}
                     underline="hover"
                     onClick={() => setCurrentStep(`segment-${index}`)}
-                    sx={{ cursor: "pointer", fontSize: ".97em" }}
+                    sx={{ cursor: "pointer", fontSize: ".9em" }}
                   >
                     Change Segment {index + 1}
                   </Link>
@@ -119,45 +143,63 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
   };
 
   const renderRoundTripSteps = () => {
-    const departureFlightInfo = selectedDepartureFlight?.trips?.[0]?.legs;
-    const returnFlightInfo = selectedReturnFlight?.trips?.[0]?.legs;
+    const departureLeg = selectedDepartureFlight?.trips?.[0]?.legs?.[0];
+    const returnLeg = selectedReturnFlight?.trips?.[0]?.legs?.[0];
 
     return (
       <>
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
-          sx={{ ml: { xs: 0.5, md: 48 }, flexWrap: "nowrap" }}
+          sx={{ flexWrap: "wrap" }}
         >
           {currentStep === "departure" ? (
             <>
-              <Typography sx={highlight}>Select departure</Typography>
-              <Typography sx={inactive}>Choose returning flight</Typography>
-              <Typography sx={inactive}>Review your trip</Typography>
+              <Chip label="Select departure" sx={activeChip} />
+              <Chip label="Choose return" sx={inactiveChip} />
+              <Chip label="Review trip" sx={inactiveChip} />
             </>
           ) : currentStep === "return" ? (
             <>
-              <Typography sx={highlight}>
-                {departureFlightInfo
-                  ? `${getAirlineName(departureFlightInfo[0]?.operatingCarrierCode)} · ${from} → ${to}`
-                  : "Departure selected"}
-              </Typography>
-              <Typography sx={highlight}>Choose returning flight</Typography>
-              <Typography sx={inactive}>Review your trip</Typography>
+              <Chip
+                label={
+                  departureLeg
+                    ? renderLogoLabel(
+                      departureLeg.operatingCarrierCode,
+                      `${from} → ${to}`
+                    )
+                    : "Departure selected"
+                }
+                sx={activeChip}
+              />
+              <Chip label="Choose return" sx={activeChip} />
+              <Chip label="Review trip" sx={inactiveChip} />
             </>
           ) : (
             <>
-              <Typography sx={highlight}>
-                {departureFlightInfo
-                  ? `${getAirlineName(departureFlightInfo[0]?.operatingCarrierCode)} · ${from} → ${to}`
-                  : "Departure selected"}
-              </Typography>
-              <Typography sx={highlight}>
-                {returnFlightInfo
-                  ? `${getAirlineName(returnFlightInfo[0]?.operatingCarrierCode)} · ${to} → ${from}`
-                  : "Return selected"}
-              </Typography>
-              <Typography sx={highlight}>Review your trip</Typography>
+              <Chip
+                label={
+                  departureLeg
+                    ? renderLogoLabel(
+                      departureLeg.operatingCarrierCode,
+                      `${from} → ${to}`
+                    )
+                    : "Departure selected"
+                }
+                sx={activeChip}
+              />
+              <Chip
+                label={
+                  returnLeg
+                    ? renderLogoLabel(
+                      returnLeg.operatingCarrierCode,
+                      `${to} → ${from}`
+                    )
+                    : "Return selected"
+                }
+                sx={activeChip}
+              />
+              <Chip label="Review trip" sx={activeChip} />
             </>
           )}
         </Breadcrumbs>
@@ -166,25 +208,25 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
           <Link
             underline="hover"
             onClick={() => setCurrentStep("departure")}
-            sx={{ mt: 0.5, cursor: "pointer", ml: 1.5, fontSize: ".97em" }}
+            sx={{ mt: 1, cursor: "pointer", fontSize: ".9em" }}
           >
-            Change flight
+            Change departure
           </Link>
         )}
 
         {currentStep === "review" && (
-          <Box sx={{ mt: 0.5, display: "flex", gap: 3 }}>
+          <Box sx={{ mt: 1, display: "flex", gap: 2 }}>
             <Link
               underline="hover"
               onClick={() => setCurrentStep("departure")}
-              sx={{ cursor: "pointer", fontSize: ".97em" }}
+              sx={{ cursor: "pointer", fontSize: ".9em" }}
             >
               Change departure
             </Link>
             <Link
               underline="hover"
               onClick={() => setCurrentStep("return")}
-              sx={{ cursor: "pointer", fontSize: ".97em" }}
+              sx={{ cursor: "pointer", fontSize: ".9em" }}
             >
               Change return
             </Link>
@@ -195,7 +237,13 @@ const BookingSteps: React.FC<BookingStepsProps> = ({
   };
 
   return (
-    <Box sx={{ mb: { xs: 2, md: 2 }, width: "auto", maxWidth: "100%" }}>
+    <Box
+      sx={{
+        mb: 2,
+        width: "100%",
+        ml: { xs: 0, md: 45 }, // ✅ Pushes BookingSteps right to avoid overlap
+      }}
+    >
       {isMultiCity ? renderMultiCitySteps() : renderRoundTripSteps()}
     </Box>
   );
