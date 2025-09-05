@@ -1,5 +1,6 @@
 import React from "react";
 import FlightSearch from "../components/Flightsearch";
+import ChatBot from "../components/ChatBot";
 
 // Updated destinations with reliable, fast-loading images
 const destinations = [
@@ -329,7 +330,7 @@ const HomePage: React.FC = () => (
       </div>
     </section>
 
-
+    <ChatBot />
     {/* Footer */}
   </main>
 );
