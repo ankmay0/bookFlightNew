@@ -10,6 +10,7 @@ import TripReview from "./TripReview";
 import TripSummary from "./TripSummary";
 import FlightCountBar from "./FlightCountBar";
 import BookingSteps from "./BookingSteps";
+import { fetchFlights } from "../../utils/FlightUtils";
 
 export type BookingStep = "departure" | "return" | "review" | `segment-${number}`;
 
@@ -99,135 +100,25 @@ const FlightSearchResults: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isMultiCity) {
-      if (!segments || !Array.isArray(segments) || segments.length < 2) {
-        setError("Invalid multi-city search parameters. Please try again.");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const fetchPromises = segments.map((seg: { from: string; to: string; date: string }) => {
-        if (!seg.from || !seg.to || !seg.date || (!adults && !children)) {
-          return Promise.reject(new Error(`Missing parameters for segment: ${JSON.stringify(seg)}`));
-        }
-        const adt = adults || 0,
-          chd = children || 0;
-        let url = `http://localhost:8080/flights/search?originLocationCode=${seg.from}&destinationLocationCode=${seg.to}&departureDate=${seg.date}&currencyCode=INR`;
-        if (adt) url += `&adults=${adt}`;
-        if (chd) url += `&children=${chd}`;
-        return fetch(url).then((res) => {
-          if (!res.ok) {
-            throw new Error(
-              res.status === 400
-                ? `Invalid parameters for segment ${seg.from} to ${seg.to}.`
-                : res.status === 500
-                  ? "Server error. Please try again later."
-                  : `HTTP error ${res.status}`
-            );
-          }
-          return res.json();
-        });
-      });
-
-      Promise.allSettled(fetchPromises)
-        .then((results) => {
-          const segmentFlightsArray: Flight[][] = [];
-          const errors: string[] = [];
-          results.forEach((result, idx) => {
-            if (result.status === "fulfilled") {
-              const flightsArr: Flight[] = Array.isArray(result.value.flightsAvailable) ? result.value.flightsAvailable : [];
-              segmentFlightsArray.push(flightsArr);
-            } else {
-              errors.push(`Segment ${idx + 1}: ${result.reason.message}`);
-              segmentFlightsArray.push([]);
-            }
-          });
-          setSegmentFlights(segmentFlightsArray);
-          setSelectedFlights(new Array(segments.length).fill(null));
-          setFilteredFlights(segmentFlightsArray[0] || []);
-          const prices = segmentFlightsArray.flat().map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
-          setMinPrice(prices.length ? Math.min(...prices) : 200);
-          setMaxPrice(prices.length ? Math.max(...prices) : 150000);
-          const stopsSet = new Set<string>(),
-            airlinesSet = new Set<string>();
-          segmentFlightsArray.flat().forEach((f) => {
-            stopsSet.add(mapStopsToLabel(f.trips?.[0]?.stops));
-            f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
-          });
-          setAvailableStops(Array.from(stopsSet));
-          setAvailableAirlines(Array.from(airlinesSet));
-          setError(errors.length ? errors.join("; ") : null);
-          setLoading(false);
-
-        })
-        .catch((err) => {
-          setError(err.message || "Failed to fetch multi-city flights. Please try again.");
-          setSegmentFlights([]);
-          setFilteredFlights([]);
-          setLoading(false);
-        });
-    } else {
-      if (!from || !to || !departDate || (!adults && !children)) {
-        setError("Missing search parameters. Please try again.");
-        setLoading(false);
-        return;
-      }
-      const adt = adults || 0,
-        chd = children || 0;
-      let url = `http://localhost:8080/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
-      if (adt) url += `&adults=${adt}`;
-      if (chd) url += `&children=${chd}`;
-      if (returnDate && !isOneWay) url += `&returnDate=${returnDate}`;
-      setLoading(true);
-      fetch(url)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(
-              res.status === 400
-                ? "Invalid search parameters."
-                : res.status === 500
-                  ? "Server error. Please try again later."
-                  : `HTTP error ${res.status}`
-            );
-          }
-          return res.json();
-        })
-        .then((data) => {
-          console.log("Flight search response:", data);
-          let flightsArr: Flight[] = Array.isArray(data.flightsAvailable) ? data.flightsAvailable : [];
-          setFlights(flightsArr);
-          setFilteredFlights(flightsArr);
-          const prices = flightsArr.map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
-          setMinPrice(prices.length ? Math.min(...prices) : 200);
-          setMaxPrice(prices.length ? Math.max(...prices) : 150000);
-          const stopsSet = new Set<string>(),
-            airlinesSet = new Set<string>();
-          flightsArr.forEach((f) => {
-            f.trips?.forEach(trip => {
-              stopsSet.add(mapStopsToLabel(trip.stops));
-            });
-            f.trips?.forEach((trip) => trip.legs.forEach((leg) => airlinesSet.add(leg.operatingCarrierCode)));
-          });
-          setAvailableStops(Array.from(stopsSet));
-          setAvailableAirlines(Array.from(airlinesSet));
-          setLoading(false);
-          setAvailableStops(Array.from(stopsSet).sort((a, b) => {
-            // Sort stops in logical order: Non-stop, 1 stop, 2 stops, etc.
-            if (a === "Non-stop") return -1;
-            if (b === "Non-stop") return 1;
-            if (a === "1 stop") return -1;
-            if (b === "1 stop") return 1;
-            return parseInt(a) - parseInt(b);
-          }));
-        })
-        .catch((err) => {
-          console.error("Flight search error:", err);
-          setError(err.message || "Failed to fetch flights. Please try again.");
-          setFlights([]);
-          setFilteredFlights([]);
-          setLoading(false);
-        });
-    }
+    fetchFlights(
+      isMultiCity,
+      segments,
+      from,
+      to,
+      departDate,
+      returnDate,
+      adults,
+      children,
+      setFlights,
+      setSegmentFlights,
+      setFilteredFlights,
+      setLoading,
+      setError,
+      setMinPrice,
+      setMaxPrice,
+      setAvailableStops,
+      setAvailableAirlines
+    );
   }, [from, to, departDate, returnDate, adults, children, isOneWay, isMultiCity, segments]);
 
   useEffect(() => {

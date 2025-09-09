@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Stack, Typography, Divider } from "@mui/material";
-import { formatPrice } from "../utils/utils";
+import { formatPrice } from "../utils/LocationUtils";
 
 interface PriceSummaryProps {
   baseFare: number;
