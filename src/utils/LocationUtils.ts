@@ -2,6 +2,8 @@ import axios from "axios";
 import debounce from "lodash.debounce";
 import { v4 as uuidv4 } from "uuid";
 
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   if (
     lat1 === undefined ||
@@ -41,7 +43,7 @@ export const fetchLocations = async (
     if (setLoading) setLoading(true);
     console.log(`Making API request for keyword: "${keyword}"`);
     const res = await axios.get(
-      `http://localhost:8080/locations/search?keyword=${encodeURIComponent(keyword)}`
+      `${backendUrl}/locations/search?keyword=${encodeURIComponent(keyword)}`
     );
     console.log("Raw API Response:", JSON.stringify(res.data, null, 2));
     const data = res.data;

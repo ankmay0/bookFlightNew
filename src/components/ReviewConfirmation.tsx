@@ -23,6 +23,9 @@ import BaggageAllowance from "../components/BaggageAllowance";
 import PriceSummary from "../components/PriceSummary";
 
 const ReviewConfirmation: React.FC = () => {
+
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -110,7 +113,7 @@ const ReviewConfirmation: React.FC = () => {
       const flightOfferStr =
         typeof flightOffer === "string" ? flightOffer : JSON.stringify(flightOffer);
       const { data: bookingData } = await axios.post(
-        "http://localhost:8080/booking/flight-order",
+        `${backendUrl}/booking/flight-order`,
         { flightOffer: flightOfferStr, travelers, payment: paymentDetails }
       );
 

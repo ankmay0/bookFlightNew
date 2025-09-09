@@ -19,6 +19,9 @@ export const fetchFlights = async (
   setAvailableStops: React.Dispatch<React.SetStateAction<string[]>>,
   setAvailableAirlines: React.Dispatch<React.SetStateAction<string[]>>
 ) => {
+
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
   const mapStopsToLabel = (stops: number | undefined) => {
     if (stops === undefined || stops === null) return "Unknown";
     if (stops === 0) return "Non-stop";
@@ -39,7 +42,7 @@ export const fetchFlights = async (
       }
       const adt = adults || 0,
         chd = children || 0;
-      let url = `http://localhost:8080/flights/search?originLocationCode=${seg.from}&destinationLocationCode=${seg.to}&departureDate=${seg.date}&currencyCode=INR`;
+      let url = `${backendUrl}/flights/search?originLocationCode=${seg.from}&destinationLocationCode=${seg.to}&departureDate=${seg.date}&currencyCode=INR`;
       if (adt) url += `&adults=${adt}`;
       if (chd) url += `&children=${chd}`;
       return fetch(url).then((res) => {
@@ -99,7 +102,7 @@ export const fetchFlights = async (
     }
     const adt = adults || 0,
       chd = children || 0;
-    let url = `http://localhost:8080/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
+    let url = `${backendUrl}/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
     if (adt) url += `&adults=${adt}`;
     if (chd) url += `&children=${chd}`;
     if (returnDate) url += `&returnDate=${returnDate}`;
