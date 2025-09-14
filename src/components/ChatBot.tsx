@@ -1,13 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+interface FlightParams {
+  origin: string;
+  destination: string;
+  date: string;
+  adults: number;
+  returnDate?: string;
+  children?: number;
+}
 
 interface Message {
   role: "user" | "assistant";
   text: string;
+  flightParams?: FlightParams;
 }
 
-// Helper function to parse **text** into bold HTML
 const parseBoldText = (text: string): string => {
-  // Replace **text** with <strong>text</strong>
   return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 };
 
@@ -19,8 +28,8 @@ const ChatBot: React.FC = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
-  // Auto-scroll to the bottom of the chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -34,14 +43,13 @@ const ChatBot: React.FC = () => {
     setLoading(true);
 
     try {
-      // Map messages to OpenAI-compatible format (text -> content)
       const apiMessages = messages.slice(-10).map((msg) => ({
         role: msg.role,
         content: msg.text,
       }));
       const apiUserMessage = { role: userMessage.role, content: userMessage.text };
 
-      const response = await fetch("https://598a5d102f6a.ngrok-free.app", {
+      const response = await fetch("https://f36595258d0f.ngrok-free.app", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,8 +70,15 @@ const ChatBot: React.FC = () => {
 
       const data = await response.json();
       const botText = data.choices?.[0]?.message?.content || "⚠️ No reply from server";
+      const flightParams = data.choices?.[0]?.message?.flight_params;
 
-      const botMessage: Message = { role: "assistant", text: botText };
+      const botMessage: Message = {
+        role: "assistant",
+        text: botText.includes("<div style='font-family: Arial, sans-serif;")
+          ? `${botText}<br><a href="#" style="color: #3b73df; text-decoration: underline; cursor: pointer;">See More</a>`
+          : botText,
+        flightParams, // Store flightParams if available
+      };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Chat error:", error);
@@ -80,9 +95,50 @@ const ChatBot: React.FC = () => {
     }
   };
 
+  const handleSeeMore = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    // Find the last assistant message with valid flightParams
+    const lastFlightMessage = messages
+      .slice()
+      .reverse()
+      .find((msg) => msg.role === "assistant" && msg.flightParams);
+
+    if (lastFlightMessage?.flightParams) {
+      const { origin, destination, date, adults, returnDate, children } = lastFlightMessage.flightParams;
+
+      // Validate required fields
+      if (!origin || !destination || !date) {
+        const errorMessage: Message = {
+          role: "assistant",
+          text: "⚠️ Sorry, I couldn't find complete flight details. Please provide origin, destination, and date.",
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+
+      const navigationState = {
+        from: origin.toUpperCase(),
+        to: destination.toUpperCase(),
+        departDate: date,
+        returnDate: returnDate || undefined,
+        adults: adults || 1,
+        children: children || 0,
+        tripType: returnDate ? "roundtrip" : "oneway",
+      };
+      navigate("/results", { state: navigationState });
+    } else {
+      // Inform user if no valid flight parameters are found
+      const errorMessage: Message = {
+        role: "assistant",
+        text: "⚠️ No flight details available. Please provide a flight query (e.g., 'flights from JFK to LAX on 2025-10-01').",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+
   return (
     <div>
-      {/* Floating Button */}
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
@@ -113,7 +169,7 @@ const ChatBot: React.FC = () => {
             position: "fixed",
             top: 0,
             right: 0,
-            width: "min(90vw, 400px)", // Responsive width
+            width: "min(90vw, 400px)",
             height: "100vh",
             background: "#fff",
             display: "flex",
@@ -122,7 +178,6 @@ const ChatBot: React.FC = () => {
             boxShadow: "-3px 0 10px rgba(0,0,0,0.2)",
           }}
         >
-          {/* Header */}
           <div
             style={{
               background: "#3b73df",
@@ -150,7 +205,6 @@ const ChatBot: React.FC = () => {
             </button>
           </div>
 
-          {/* Messages */}
           <div
             style={{
               flex: 1,
@@ -160,6 +214,12 @@ const ChatBot: React.FC = () => {
               background: "#f9f9f9",
               display: "flex",
               flexDirection: "column",
+            }}
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.tagName === "A" && target.textContent === "See More") {
+                handleSeeMore(e as any);
+              }
             }}
           >
             {messages.map((msg, idx) => (
@@ -207,7 +267,6 @@ const ChatBot: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div
             style={{
               display: "flex",
