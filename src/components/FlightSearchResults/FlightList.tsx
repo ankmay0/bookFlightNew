@@ -30,8 +30,6 @@ const airlinesData: { [key: string]: { name: string; icon: string } } = {
   HA: { name: "Hawaiian Airlines", icon: "https://content.airhex.com/content/logos/airlines_HA_75_75_s.png" },
 };
 
-
-
 const getAirlineName = (code: string): string =>
   airlinesData[code as keyof typeof airlinesData]?.name || code;
 
@@ -63,6 +61,35 @@ const airportCityMap: { [key: string]: string } = {
 const getCityName = (airportCode: string): string =>
   airportCityMap[airportCode?.toUpperCase?.()] || airportCode;
 
+// Helper function to format dates
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    day: '2-digit', 
+    month: 'short' 
+  }).replace(',', '');
+};
+
+// Helper function to count flights by stops
+const countFlightsByStops = (flights: Flight[]) => {
+  const counts = {
+    "Non-stop": 0,
+    "1 stop": 0,
+    "2+ stops": 0
+  };
+
+  flights.forEach(flight => {
+    flight.trips.forEach(trip => {
+      const stops = trip.stops || 0;
+      if (stops === 0) counts["Non-stop"]++;
+      else if (stops === 1) counts["1 stop"]++;
+      else if (stops >= 2) counts["2+ stops"]++;
+    });
+  });
+
+  return counts;
+};
+
 interface FlightListProps {
   loading: boolean;
   lottieJson: any;
@@ -90,6 +117,8 @@ interface FlightListProps {
   currentStep: BookingStep;
   segments?: Array<{ from: string; to: string; date: string }>;
   selectedFlights?: (Flight | null)[];
+  departureDate?: string; // Added for date display
+  returnDate?: string;    // Added for date display
 }
 
 // ========================== FlightCard ==========================
@@ -215,7 +244,7 @@ const FlightCard: React.FC<{
       </Box>
 
       {/* Select button at bottom right */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0 }}>
         <Button
           variant="contained"
           size="small"
@@ -264,7 +293,6 @@ const FlightCard: React.FC<{
   );
 };
 
-
 // ========================== FlightList ==========================
 const FlightList: React.FC<FlightListProps> = ({
   loading,
@@ -292,6 +320,8 @@ const FlightList: React.FC<FlightListProps> = ({
   currentStep,
   segments,
   selectedFlights,
+  departureDate,
+  returnDate,
 }) => {
   const isMultiCity = segments && segments.length > 1;
   const segmentIndex =
@@ -301,28 +331,9 @@ const FlightList: React.FC<FlightListProps> = ({
   const segmentFlights = filteredFlights.filter(
     (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
   );
-  // In FlightList.tsx, add this before the return statement
-const countFlightsByStops = (flights: Flight[]) => {
-  const counts = {
-    "Non-stop": 0,
-    "1 stop": 0,
-    "2+ stops": 0
-  };
 
-  flights.forEach(flight => {
-    // For each flight, look at all trips (outbound and return)
-    flight.trips.forEach(trip => {
-      const stops = trip.stops || 0;
-      if (stops === 0) counts["Non-stop"]++;
-      else if (stops === 1) counts["1 stop"]++;
-      else if (stops >= 2) counts["2+ stops"]++;
-    });
-  });
-
-  return counts;
-};
-
-const stopCounts = countFlightsByStops(filteredFlights);
+  // Calculate stop counts - this was missing and causing the error
+  const stopCounts = countFlightsByStops(filteredFlights);
 
   return (
     <Grid container spacing={3}>
@@ -361,6 +372,9 @@ const stopCounts = countFlightsByStops(filteredFlights);
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
               Choose Flight for Segment {segmentIndex + 1}: {getCityName(from)} to {getCityName(to)}
+              {segments && segments[segmentIndex]?.date && (
+                <span> on {formatDate(segments[segmentIndex].date)}</span>
+              )}
             </Typography>
             {segmentFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
@@ -389,6 +403,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
               Choose Your Departure Flight from {getCityName(from)} to {getCityName(to)}
+              {departureDate && <span> on {formatDate(departureDate)}</span>}
             </Typography>
             {segmentFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
@@ -409,6 +424,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
               Choose Your Return Flight from {getCityName(to)} to {getCityName(from)}
+              {returnDate && <span> on {formatDate(returnDate)}</span>}
             </Typography>
             {segmentFlights.length === 0 ? (
               <Typography variant="body1" color="text.secondary">
