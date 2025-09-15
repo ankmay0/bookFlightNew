@@ -19,7 +19,7 @@ import Grid from "@mui/material/Grid";
 import { FlightTakeoff, FlightLand, Person, Search, Add, Remove, ChildCare, ExpandMore, Close, LocationOn } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Autocomplete from "@mui/material/Autocomplete";
-import { fetchLocations, createDebouncedFetcher } from "../utils/utils";
+import { fetchLocations, createDebouncedFetcher } from "../utils/LocationUtils";
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import SearchHeaderTags from "../SearchHeaderTags";

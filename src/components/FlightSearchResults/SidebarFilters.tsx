@@ -154,63 +154,76 @@ const SidebarFilters: React.FC<SidebarFiltersProps & { stopCounts: { [key: strin
           <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />
           Stops
         </Typography>
-        <FormGroup>
-          {availableStops.map((stop) => (
-            <FormControlLabel
-              key={stop}
-              control={
-                <Checkbox
-                  checked={selectedStops.includes(stop)}
-                  onChange={handleCheckboxChange(stop, selectedStops, setSelectedStops)}
-                  sx={{
-                    color: "#000000",
-                    "&.Mui-checked": {
-                      color: "#4515c7ff",
-                    },
-                    "&:hover": {
-                      backgroundColor: "rgba(33, 150, 243, 0.1)",
-                    },
-                    transform: "scale(1)",
-                    transition: "transform 0.2s ease-in-out",
-                    "&.Mui-checked:hover": {
-                      transform: "scale(1.1)",
-                    },
-                  }}
-                />
-              }
-              label={
-                <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {stopIcons[stop] || <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />}
-                    <Typography sx={{ color: "#000000" }}>{stop}</Typography>
-                  </Box>
-                  {stopCounts && stopCounts[stop as keyof typeof stopCounts] > 0 && (
-                    <Chip
-                      label={stopCounts[stop as keyof typeof stopCounts]}
-                      size="small"
-                      sx={{
-                        background: "linear-gradient(90deg, #4715c7ff, #2196f3)",
-                        color: "white",
-                        fontWeight: 500,
-                        borderRadius: 4,
-                        ml: 1,
-                      }}
-                    />
-                  )}
-                </Box>
-              }
-              sx={{
-                width: "100%",
-                py: 0.5,
-                px: 1,
-                borderRadius: 2,
-                "&:hover": {
-                  backgroundColor: "rgba(33, 150, 243, 0.1)",
-                },
-              }}
-            />
-          ))}
-        </FormGroup>
+         <FormGroup>
+    {availableStops.sort((a, b) => {
+      // Extract number of stops from labels
+      const getStopCount = (label: string) => {
+        if (label.includes("2") || label.includes("+")) return 2;
+        if (label.includes("1")) return 1;
+        return 0; // Non-stop/Direct
+      };
+      
+      const aStops = getStopCount(a);
+      const bStops = getStopCount(b);
+      
+      // Sort in descending order (2 stops first, then 1, then non-stop)
+      return bStops - aStops;
+    }).map((stop) => (
+      <FormControlLabel
+        key={stop}
+        control={
+          <Checkbox
+            checked={selectedStops.includes(stop)}
+            onChange={handleCheckboxChange(stop, selectedStops, setSelectedStops)}
+            sx={{
+              color: "#000000",
+              "&.Mui-checked": {
+                color: "#4515c7ff",
+              },
+              "&:hover": {
+                backgroundColor: "rgba(33, 150, 243, 0.1)",
+              },
+              transform: "scale(1)",
+              transition: "transform 0.2s ease-in-out",
+              "&.Mui-checked:hover": {
+                transform: "scale(1.1)",
+              },
+            }}
+          />
+        }
+        label={
+          <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {stopIcons[stop] || <FlightTakeoffIcon fontSize="medium" sx={{ color: "#000000" }} />}
+              <Typography sx={{ color: "#000000" }}>{stop}</Typography>
+            </Box>
+            {stopCounts && stopCounts[stop as keyof typeof stopCounts] > 0 && (
+              <Chip
+                label={stopCounts[stop as keyof typeof stopCounts]}
+                size="small"
+                sx={{
+                  background: "linear-gradient(90deg, #4715c7ff, #2196f3)",
+                  color: "white",
+                  fontWeight: 500,
+                  borderRadius: 4,
+                  ml: 1,
+                }}
+              />
+            )}
+          </Box>
+        }
+        sx={{
+          width: "100%",
+          py: 0.5,
+          px: 1,
+          borderRadius: 2,
+          "&:hover": {
+            backgroundColor: "rgba(33, 150, 243, 0.1)",
+          },
+        }}
+      />
+    ))}
+  </FormGroup>
       </Box>
 
       <Box mb={4}>

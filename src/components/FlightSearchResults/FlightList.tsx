@@ -331,9 +331,27 @@ const FlightList: React.FC<FlightListProps> = ({
   const segmentFlights = filteredFlights.filter(
     (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
   );
+  // In FlightList.tsx, add this before the return statement
+const countFlightsByStops = (flights: Flight[]) => {
+  const counts = {
+    "2+ stops": 0,
+    "1 stop": 0,
+    "Non-stop": 0,
+  };
 
-  // Calculate stop counts - this was missing and causing the error
-  const stopCounts = countFlightsByStops(filteredFlights);
+  flights.forEach(flight => {
+    flight.trips.forEach(trip => {
+      const stops = trip.stops ?? 0;
+      if (stops === 0) counts["Non-stop"]++;
+      else if (stops === 1) counts["1 stop"]++;
+      else counts["2+ stops"]++;
+    });
+  });
+
+  return counts;
+};
+
+const stopCounts = countFlightsByStops(filteredFlights);
 
   return (
     <Grid container spacing={3}>

@@ -48,6 +48,7 @@ const formatPrice = (price: string | number) =>
 const calculateFlightDuration = (flight: Flight) => {
   const dep = new Date(flight.trips[0].legs[0].departureDateTime).getTime();
   const arr = new Date(flight.trips[0].legs.slice(-1)[0].arrivalDateTime).getTime();
+  console.log("flight" , flight)
   return Math.round((arr - dep) / 60000); // minutes
 };
 
@@ -161,7 +162,7 @@ const TripReview: React.FC<TripReviewProps> = ({
               <FlightCard
                 fromCity={airportCityMap[to] || to}
                 toCity={airportCityMap[from] || from}
-                leg={returnFlight.trips[0].legs[0]}
+                leg={returnFlight.trips[1].legs[0]}
                 flight={returnFlight}
               />
             )}

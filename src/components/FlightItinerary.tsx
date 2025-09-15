@@ -4,7 +4,7 @@ import { ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from "@mui
 import { format } from "date-fns";
 import { Flight, Trip, Leg } from "./Types/FlightTypes";
 import { getCityName, getAirlineName } from "../utils/FlightData";
-import { formatTime } from "../utils/utils";
+import { formatTime } from "../utils/LocationUtils";
 
 interface FlightItineraryProps {
   flight: Flight;

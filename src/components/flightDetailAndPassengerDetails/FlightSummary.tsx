@@ -11,7 +11,7 @@ import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import FlightLandIcon from "@mui/icons-material/FlightLand";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import { Flight, Passenger } from "../Types/FlightTypes";
-import { formatPrice, formatTime, formatDate, calculateFlightDuration } from "../../utils/utils"
+import { formatPrice, formatTime, formatDate, calculateFlightDuration } from "../../utils/LocationUtils";
 import { getCityName } from "../../utils/FlightData";
 
 interface FlightSummaryProps {
