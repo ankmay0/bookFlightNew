@@ -48,7 +48,7 @@ const DEFAULT_COORDINATES = {
 };
 
 // Replace with programmatic OAuth token retrieval in production
-const token = 'AjlHZDqDAkrVAwyzrTZGRKePh5pg';
+const token = 'yALqqbAYeq2A8T6UG4g6tLrwQfOe';
 
 // Optional identifying email for Nominatim usage policy
 const NOMINATIM_EMAIL = 'contact@example.com';

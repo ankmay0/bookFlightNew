@@ -2,6 +2,20 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Typography, Paper, Button, CircularProgress } from "@mui/material";
 import { AirplanemodeActive as AirplaneIcon } from "@mui/icons-material";
+import 'ol/ol.css';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import { fromLonLat } from 'ol/proj';
+import Style from 'ol/style/Style';
+import CircleStyle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
 
 interface FlightParams {
   origin: string;
@@ -29,11 +43,28 @@ interface Flight {
   }[];
 }
 
+interface ActivityParams {
+  coords: { latitude: number; longitude: number };
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  shortDescription?: string;
+  description: string;
+  price: { amount: string; currencyCode: string };
+  bookingLink: string;
+  pictures: string[];
+  geoCode: { latitude: string; longitude: string };
+}
+
 interface Message {
   role: "user" | "assistant";
   text: string;
   flightParams?: FlightParams;
   flights?: Flight[];
+  activityParams?: ActivityParams;
+  activities?: Activity[];
 }
 
 const parseBoldText = (text: unknown): string => {
@@ -88,10 +119,98 @@ const calculateFlightDuration = (flight: Flight): number => {
   return Math.floor((new Date(last.arrivalDateTime).getTime() - new Date(first.departureDateTime).getTime()) / 60000);
 };
 
+const stripHtmlTags = (html?: string) => {
+  return html ? html.replace(/<[^>]*>/g, '') : 'No description available';
+};
+
+const ActivityMap: React.FC<{ activities: Activity[]; coords: { latitude: number; longitude: number } }> = ({ activities, coords }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const olMapRef = useRef<Map | null>(null);
+
+  useEffect(() => {
+    if (mapRef.current && !olMapRef.current) {
+      const baseLayer = new TileLayer({
+        source: new OSM()
+      });
+
+      const activitySource = new VectorSource();
+      const activityLayer = new VectorLayer({
+        source: activitySource
+      });
+
+      const userSource = new VectorSource();
+      const userLayer = new VectorLayer({
+        source: userSource
+      });
+
+      olMapRef.current = new Map({
+        target: mapRef.current,
+        layers: [baseLayer, activityLayer, userLayer],
+        view: new View({
+          center: fromLonLat([coords.longitude, coords.latitude]),
+          zoom: 13
+        })
+      });
+
+      // Add user marker
+      const userFeature = new Feature({
+        geometry: new Point(fromLonLat([coords.longitude, coords.latitude])),
+      });
+      userFeature.setStyle(
+        new Style({
+          image: new CircleStyle({
+            radius: 7,
+            fill: new Fill({ color: 'rgba(37, 99, 235, 0.9)' }),
+            stroke: new Stroke({ color: '#ffffff', width: 2 })
+          })
+        })
+      );
+      userSource.addFeature(userFeature);
+
+      // Add activity markers
+      activities.forEach((act) => {
+        const lat = parseFloat(act.geoCode.latitude);
+        const lon = parseFloat(act.geoCode.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          const feature = new Feature({
+            geometry: new Point(fromLonLat([lon, lat])),
+            name: act.name
+          });
+          feature.setStyle(
+            new Style({
+              image: new CircleStyle({
+                radius: 6,
+                fill: new Fill({ color: 'rgba(255, 140, 0, 0.9)' }),
+                stroke: new Stroke({ color: '#ffffff', width: 2 })
+              })
+            })
+          );
+          activitySource.addFeature(feature);
+        }
+      });
+
+      // Fit to extent if activities present
+      if (activitySource.getFeatures().length > 0) {
+        const extent = activitySource.getExtent();
+        olMapRef.current.getView().fit(extent, { padding: [50, 50, 50, 50], maxZoom: 15 });
+      }
+    }
+
+    return () => {
+      if (olMapRef.current) {
+        olMapRef.current.setTarget(undefined);
+        olMapRef.current = null;
+      }
+    };
+  }, [activities, coords]);
+
+  return <div ref={mapRef} style={{ width: '100%', height: '300px' }} />;
+};
+
 const ChatBot: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: "Hi 👋, how can I help you with your **flight booking**?" },
+    { role: "assistant", text: "Hi 👋, how can I help you with your **flight booking** or **activities**?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -148,94 +267,130 @@ const ChatBot: React.FC = () => {
     return flights;
   };
 
-  const handleSend = async () => {
-  if (input.trim() === "") {
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", text: "Please enter a message to continue." },
-    ]);
-    return;
-  }
+  const parseActivitiesFromHTML = (html: string): Activity[] => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const activityElements = doc.querySelectorAll("div[style*='background: #fff; border: 1px solid #ddd;']");
 
-  const userMessage: Message = { role: "user", text: input };
-  setMessages((prev) => [...prev, userMessage]);
-  setInput("");
-  setLoading(true);
+    const activities: Activity[] = [];
+    activityElements.forEach((elem) => {
+      const name = elem.querySelector("h3")?.textContent || "Unknown Activity";
+      const priceText = elem.querySelector("p:nth-of-type(1)")?.textContent?.replace("Price: ", "") || "0 INR";
+      const [amount, currencyCode] = priceText.split(" ");
+      const description = elem.querySelector("p:nth-of-type(2)")?.textContent || "No description";
 
-  try {
-    const apiMessages = messages.slice(-10).map((msg) => ({
-      role: msg.role,
-      content: msg.text,
-    }));
-    const apiUserMessage = { role: userMessage.role, content: userMessage.text };
-
-    const response = await fetch("https://c4f8dcea484b.ngrok-free.app", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are SkyHub Assistant, a helpful flight booking assistant." },
-          ...apiMessages,
-          apiUserMessage,
-        ],
-      }),
+      activities.push({
+        id: "",
+        name,
+        description,
+        price: { amount, currencyCode },
+        bookingLink: "",
+        pictures: [],
+        geoCode: { latitude: "0", longitude: "0" }
+      });
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    return activities;
+  };
+
+  const handleSend = async () => {
+    if (input.trim() === "") {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Please enter a message to continue." },
+      ]);
+      return;
     }
 
-    const data = await response.json();
-    console.log("Backend response:", JSON.stringify(data, null, 2));
-    const botTextRaw = data.choices?.[0]?.message?.content;
-    const botText = typeof botTextRaw === "string" ? botTextRaw : "⚠️ Invalid response from server";
-    const flightParams = data.choices?.[0]?.message?.flight_params;
-    let flights: Flight[] = [];
+    const userMessage: Message = { role: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
 
-    if (data.choices?.[0]?.message?.flights) {
-      flights = data.choices[0].message.flights.filter((flight: any) =>
-        flight &&
-        typeof flight.totalPrice === "string" &&
-        flight.trips &&
-        Array.isArray(flight.trips) &&
-        flight.trips.length > 0 &&
-        flight.trips[0].legs &&
-        Array.isArray(flight.trips[0].legs) &&
-        flight.trips[0].legs.length > 0 &&
-        typeof flight.trips[0].legs[0].operatingCarrierCode === "string" &&
-        typeof flight.trips[0].legs[0].departureDateTime === "string" &&
-        typeof flight.trips[0].legs[0].arrivalDateTime === "string" &&
-        typeof flight.trips[0].from === "string" &&
-        typeof flight.trips[0].to === "string" &&
-        typeof flight.trips[0].stops === "number"
-      );
-    } else if (flightParams && typeof botText === "string" && botText.includes("font-family: Arial, sans-serif")) {
-      console.warn("Falling back to HTML parsing for flights");
-      flights = parseFlightsFromHTML(botText, flightParams);
+    try {
+      const apiMessages = messages.slice(-10).map((msg) => ({
+        role: msg.role,
+        content: msg.text,
+      }));
+      const apiUserMessage = { role: userMessage.role, content: userMessage.text };
+
+      const response = await fetch("https://43687bca627a.ngrok-free.app", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are SkyHub Assistant, a helpful flight booking and activities assistant." },
+            ...apiMessages,
+            apiUserMessage,
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Backend response:", JSON.stringify(data, null, 2));
+      const botTextRaw = data.choices?.[0]?.message?.content;
+      const botText = typeof botTextRaw === "string" ? botTextRaw : "⚠️ Invalid response from server";
+      const flightParams = data.choices?.[0]?.message?.flight_params;
+      const activityParams = data.choices?.[0]?.message?.activity_params;
+      let flights: Flight[] = [];
+      let activities: Activity[] = [];
+
+      if (data.choices?.[0]?.message?.flights) {
+        flights = data.choices[0].message.flights.filter((flight: any) =>
+          flight &&
+          typeof flight.totalPrice === "string" &&
+          flight.trips &&
+          Array.isArray(flight.trips) &&
+          flight.trips.length > 0 &&
+          flight.trips[0].legs &&
+          Array.isArray(flight.trips[0].legs) &&
+          flight.trips[0].legs.length > 0 &&
+          typeof flight.trips[0].legs[0].operatingCarrierCode === "string" &&
+          typeof flight.trips[0].legs[0].departureDateTime === "string" &&
+          typeof flight.trips[0].legs[0].arrivalDateTime === "string" &&
+          typeof flight.trips[0].from === "string" &&
+          typeof flight.trips[0].to === "string" &&
+          typeof flight.trips[0].stops === "number"
+        );
+      } else if (flightParams && typeof botText === "string" && botText.includes("font-family: Arial, sans-serif")) {
+        console.warn("Falling back to HTML parsing for flights");
+        flights = parseFlightsFromHTML(botText, flightParams);
+      }
+
+      if (data.choices?.[0]?.message?.activities) {
+        activities = data.choices[0].message.activities;
+      } else if (activityParams && typeof botText === "string" && botText.includes("font-family: Arial, sans-serif")) {
+        console.warn("Falling back to HTML parsing for activities");
+        activities = parseActivitiesFromHTML(botText);
+      }
+
+      const botMessage: Message = {
+        role: "assistant",
+        text: flights.length > 0 ? "Here are the available flights:" : activities.length > 0 ? "Here are the available activities:" : botText,
+        flightParams,
+        flights: flights.length > 0 ? flights : undefined,
+        activityParams,
+        activities: activities.length > 0 ? activities : undefined,
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: Message = {
+        role: "assistant",
+        text: error instanceof Error ? `⚠️ Error: ${error.message}` : "⚠️ Oops! Something went wrong. Please try again.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
     }
-
-    console.log("Processed flights:", JSON.stringify(flights, null, 2));
-    const botMessage: Message = {
-      role: "assistant",
-      text: flights.length > 0 ? "Here are the available flights:" : botText,
-      flightParams,
-      flights: flights.length > 0 ? flights : undefined,
-    };
-    setMessages((prev) => [...prev, botMessage]);
-  } catch (error) {
-    console.error("Chat error:", error);
-    const errorMessage: Message = {
-      role: "assistant",
-      text: error instanceof Error ? `⚠️ Error: ${error.message}` : "⚠️ Oops! Something went wrong. Please try again.",
-    };
-    setMessages((prev) => [...prev, errorMessage]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleSeeMore = (e: React.MouseEvent<HTMLAnchorElement>, flightParams?: FlightParams) => {
     e.preventDefault();
@@ -296,6 +451,10 @@ const ChatBot: React.FC = () => {
         passengers,
       },
     });
+  };
+
+  const handleBookActivity = (bookingLink: string) => {
+    window.open(bookingLink, '_blank');
   };
 
   const renderFlightCard = (flight: Flight, index: number, flightParams?: FlightParams) => {
@@ -370,6 +529,45 @@ const ChatBot: React.FC = () => {
       </Paper>
     );
   };
+
+  const renderActivityCard = (activity: Activity, index: number) => (
+    <Paper
+      key={index}
+      sx={{
+        p: 2,
+        mb: 2,
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+      }}
+    >
+      {activity.pictures && activity.pictures.length > 0 && (
+        <img
+          src={activity.pictures[0]}
+          alt={activity.name}
+          style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }}
+        />
+      )}
+      <Typography variant="h6" fontWeight={600}>
+        {activity.name}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {activity.shortDescription || stripHtmlTags(activity.description)}
+      </Typography>
+      <Typography variant="body1" fontWeight={600} sx={{ mt: 1 }}>
+        {activity.price.amount} {activity.price.currencyCode}
+      </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => handleBookActivity(activity.bookingLink)}
+        sx={{ mt: 1, width: "100%" }}
+      >
+        Book Now
+      </Button>
+    </Paper>
+  );
 
   return (
     <div>
@@ -471,20 +669,10 @@ const ChatBot: React.FC = () => {
               >
                 {msg.flights && msg.flightParams ? (
                   <Box sx={{ width: "100%" }}>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                      {parseBoldText(msg.text)}
-                    </Typography>
+                    <Typography variant="body1" sx={{ mb: 1 }} dangerouslySetInnerHTML={{ __html: parseBoldText(msg.text) }} />
                     {msg.flights.length > 0 ? (
                       <>
-                        {msg.flights.map((flight, flightIdx) => (
-                          <React.Fragment key={flightIdx}>
-                            {renderFlightCard(flight, flightIdx, msg.flightParams) || (
-                              <Typography variant="body2" color="error">
-                                Invalid flight data
-                              </Typography>
-                            )}
-                          </React.Fragment>
-                        ))}
+                        {msg.flights.map((flight, flightIdx) => renderFlightCard(flight, flightIdx, msg.flightParams))}
                         <Typography
                           component="a"
                           href="#"
@@ -506,6 +694,28 @@ const ChatBot: React.FC = () => {
                       >
                         <AirplaneIcon sx={{ fontSize: 40, color: "grey.400", mb: 1 }} />
                         <Typography variant="body1">No flights found. Try adjusting your query.</Typography>
+                      </Paper>
+                    )}
+                  </Box>
+                ) : msg.activities && msg.activityParams ? (
+                  <Box sx={{ width: "100%" }}>
+                    <Typography variant="body1" sx={{ mb: 1 }} dangerouslySetInnerHTML={{ __html: parseBoldText(msg.text) }} />
+                    {msg.activities.length > 0 ? (
+                      <>
+                        {msg.activities.map((activity, actIdx) => renderActivityCard(activity, actIdx))}
+                        <ActivityMap activities={msg.activities} coords={msg.activityParams.coords} />
+                      </>
+                    ) : (
+                      <Paper
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Typography variant="body1">No activities found. Try a different location.</Typography>
                       </Paper>
                     )}
                   </Box>
