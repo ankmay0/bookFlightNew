@@ -27,6 +27,8 @@ const airlinesData: { [key: string]: { name: string; icon: string } } = {
   SG: { name: "SpiceJet", icon: "https://content.airhex.com/content/logos/airlines_SG_75_75_s.png" },
   UK: { name: "Vistara", icon: "https://content.airhex.com/content/logos/airlines_UK_75_75_s.png" },
   TK: { name: "Turkish Airlines", icon: "https://content.airhex.com/content/logos/airlines_TK_75_75_s.png" },
+  AS: { name: "Alaska Airlines", icon: "https://content.airhex.com/content/logos/airlines_AS_75_75_s.png" },
+  HA: { name: "Hawaiian Airlines", icon: "https://content.airhex.com/content/logos/airlines_HA_75_75_s.png" },
 };
 
 const getAirlineName = (code: string) => {
@@ -93,6 +95,10 @@ const FlightSearchResults: React.FC = () => {
   const isMultiCity = tripType === "multi";
 
   useEffect(() => {
+    console.log("flights (received from FlightUtils):", flights);
+  }, [flights]);
+
+  useEffect(() => {
     fetch("/animation.json")
       .then((resp) => resp.json())
       .then(setLottieJson)
@@ -132,19 +138,20 @@ const FlightSearchResults: React.FC = () => {
       updated = flights;
     }
 
-    console.log("Filtering flights:", { isMultiCity, currentStep, segmentFlights, flights, updated });
 
+    // console.log("Filtering flights:", { isMultiCity, currentStep, segmentFlights, flights, updated });
+    // console.log("Available flights:", flights);
     updated = updated.filter((flight) => {
       const price = parseFloat(flight.totalPrice || flight.basePrice || "0") || 0;
       const airlineList = flight.trips.flatMap((t) => t.legs.map((l) => l.operatingCarrierCode));
       if (price < priceRange[0] || price > priceRange[1]) return false;
       if (selectedAirlines.length && !selectedAirlines.some((a) => airlineList.includes(a))) return false;
-       if (selectedStops.length) {
-    const tripStops = flight.trips.map(trip => mapStopsToLabel(trip.stops));
-    if (!selectedStops.some(stop => tripStops.includes(stop))) {
-      return false;
-    }
-  }
+      if (selectedStops.length) {
+        const tripStops = flight.trips.map(trip => mapStopsToLabel(trip.stops));
+        if (!selectedStops.some(stop => tripStops.includes(stop))) {
+          return false;
+        }
+      }
       if (selectedTimes.length) {
         const hour = new Date(flight.trips?.[0]?.legs?.[0]?.departureDateTime ?? "").getHours();
         const match = selectedTimes.some((time) => {
@@ -196,6 +203,7 @@ const FlightSearchResults: React.FC = () => {
   };
 
   const renderLoading = () => (
+    // console.log("Available flights:", flights),
     <Box
       sx={{
         minHeight: "65vh",
@@ -333,6 +341,7 @@ const FlightSearchResults: React.FC = () => {
           }
         />
       ) : (
+        console.log("Filtered flights:", filteredFlights),
         <>
           <BookingSteps
             currentStep={currentStep}
@@ -380,6 +389,7 @@ const FlightSearchResults: React.FC = () => {
               </Button>
             </Paper>
           )}
+          
           <FlightList
             loading={loading}
             lottieJson={lottieJson}
@@ -429,6 +439,9 @@ const FlightSearchResults: React.FC = () => {
             currentStep={currentStep}
             segments={isMultiCity ? segments : undefined}
             selectedFlights={isMultiCity ? selectedFlights : undefined}
+            departureDate={departDate}
+            returnDate={returnDate}
+            locations={[fromDetails, toDetails]} // Pass location details for proper city name display
           />
         </>
       )}

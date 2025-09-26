@@ -22,19 +22,48 @@ import FlightItinerary from "../components/FlightItinerary";
 import BaggageAllowance from "../components/BaggageAllowance";
 import PriceSummary from "../components/PriceSummary";
 
-const ReviewConfirmation: React.FC = () => {
+// Detect card brand for formOfPayments.creditCard
+const detectCardBrand = (num: string | undefined) => {
+  if (!num) return undefined;
+  const n = num.replace(/\s|-/g, "");
+  if (/^4\d{12}(\d{3})?(\d{3})?$/.test(n)) return "VISA";
+  if (/^(5[1-5]\d{14}|2(2\d|[3-6]\d|7[01])\d{12})$/.test(n)) return "MASTERCARD";
+  if (/^3[47]\d{13}$/.test(n)) return "AMERICAN_EXPRESS";
+  if (/^6(?:011|5\d{2})\d{12}$/.test(n)) return "DISCOVER";
+  if (/^(?:2131|1800|35\d{3})\d{11}$/.test(n)) return "JCB";
+  if (/^3(?:0[0-5]|[68]\d)\d{11}$/.test(n)) return "DINERS";
+  return undefined;
+};
 
+const toYYYYMM = (year: string, month: string) => {
+  const y4 = year.length === 2 ? `20${year}` : year;
+  const m2 = month.padStart(2, "0");
+  return `${y4}-${m2}`;
+};
+
+type NavState = {
+  passengers?: Passenger[];
+  contact?: Partial<Contact>;
+  flight?: Flight;
+};
+
+const ReviewConfirmation: React.FC = () => {
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { passengers = [], contact = {}, flight } = location.state ?? {} as {
-    passengers: Passenger[];
-    contact: Contact;
-    flight: Flight;
+
+  // Safely read and normalize navigation state
+  const state = (location.state ?? {}) as NavState;
+  const passengers: Passenger[] = state.passengers ?? [];
+  const contactNormalized: Contact = {
+    email: state.contact?.email ?? "",
+    phone: state.contact?.phone ?? "",
+    countryCode: state.contact?.countryCode ?? "91",
   };
+  const flight = state.flight as Flight;
 
   const handleConfirmBooking = async (
     payment: {
@@ -55,78 +84,141 @@ const ReviewConfirmation: React.FC = () => {
     setError(null);
 
     try {
-      const flightOffer = flight.pricingAdditionalInfo;
+      const flightOffer = flight?.pricingAdditionalInfo;
       if (!flightOffer) {
         throw new Error("Flight offer data is missing");
       }
 
+      // Normalize flightOffers to array of objects as required by Flight Create Orders
+      const rawOffer =
+        typeof flightOffer === "string" ? JSON.parse(flightOffer) : flightOffer;
+      const flightOffers = Array.isArray(rawOffer) ? rawOffer : [rawOffer];
+
+      // Build travelers per Amadeus schema
       const travelers = passengers.map((p: Passenger, idx: number) => {
-        const traveler: any = {
-          id: (idx + 1).toString(),
-          title: p.title,
-          firstName: p.firstName,
-          lastName: p.lastName,
+        const lead = idx === 0;
+        const t: any = {
+          id: String(idx + 1),
           dateOfBirth: p.dob,
-          gender: p.gender.toUpperCase(),
-          phones: [],
+          gender: (p.gender || "").toUpperCase(),
+          name: {
+            firstName: p.firstName,
+            lastName: p.lastName,
+          },
         };
 
-        if (idx === 0) {
-          traveler.phones = [
-            {
-              deviceType: "MOBILE",
-              countryCallingCode: contact.countryCode.replace("+", ""),
-              number: contact.phone,
-            },
-          ];
-          traveler.email = contact.email;
+        if (lead) {
+          t.contact = {
+            emailAddress: contactNormalized.email,
+            phones: contactNormalized.phone
+              ? [
+                  {
+                    deviceType: "MOBILE",
+                    countryCallingCode: contactNormalized.countryCode
+                      .toString()
+                      .replace("+", ""),
+                    number: contactNormalized.phone,
+                  },
+                ]
+              : [],
+          };
         }
 
-        if (p.passport) {
-          traveler.documents = [
+        if ((p as any).passport) {
+          t.documents = [
             {
               documentType: "PASSPORT",
-              number: p.passport,
-              issuanceDate: "2020-01-01",
-              expiryDate: "2030-01-01",
-              issuanceCountry: "IN",
-              validityCountry: "IN",
-              nationality: "IN",
-              birthPlace: "Unknown",
-              issuanceLocation: "Unknown",
+              number: (p as any).passport,
+              issuanceDate: (p as any).passportIssuanceDate || "2020-01-01",
+              expiryDate: (p as any).passportExpiryDate || "2030-01-01",
+              issuanceCountry:
+                (p as any).passportIssuanceCountry || "IN",
+              validityCountry:
+                (p as any).passportValidityCountry || "IN",
+              nationality: (p as any).nationality || "IN",
+              birthPlace: (p as any).birthPlace || "Unknown",
+              issuanceLocation: (p as any).issuanceLocation || "Unknown",
               holder: true,
             },
           ];
         }
 
-        return traveler;
+        return t;
       });
 
-      const paymentDetails = {
-        type: "credit_card",
-        name: payment.cardName,
-        number: payment.cardNumber.replace(/\s/g, ""),
-        expiry: `${payment.expiryMonth}/${payment.expiryYear}`,
-        cvv: payment.cvv,
+      // Optional booking-level contacts
+      const orderContacts =
+        contactNormalized.email || contactNormalized.phone
+          ? [
+              {
+                addresseeName: {
+                  firstName: passengers[0]?.firstName || "Lead",
+                  lastName: passengers[0]?.lastName || "Passenger",
+                },
+                purpose: "STANDARD",
+                emailAddress: contactNormalized.email,
+                phones: contactNormalized.phone
+                  ? [
+                      {
+                        deviceType: "MOBILE",
+                        countryCallingCode: contactNormalized.countryCode
+                          .toString()
+                          .replace("+", ""),
+                        number: contactNormalized.phone,
+                      },
+                    ]
+                  : [],
+              },
+            ]
+          : [];
+
+      // Optional payment -> formOfPayments.creditCard with YYYY-MM
+      const sanitizedCard = payment.cardNumber?.replace(/\s|-/g, "");
+      const brand = detectCardBrand(sanitizedCard);
+      const formOfPayments =
+        sanitizedCard && brand
+          ? [
+              {
+                creditCard: {
+                  brand,
+                  holder: payment.cardName,
+                  number: sanitizedCard,
+                  expiryDate: toYYYYMM(
+                    payment.expiryYear,
+                    payment.expiryMonth
+                  ),
+                  securityCode: payment.cvv,
+                },
+              },
+            ]
+          : undefined;
+
+      const payload: any = {
+        data: {
+          type: "flight-order",
+          flightOffers,
+          travelers,
+          contacts: orderContacts,
+        },
       };
 
-      const flightOfferStr =
-        typeof flightOffer === "string" ? flightOffer : JSON.stringify(flightOffer);
+      if (formOfPayments) {
+        payload.data.formOfPayments = formOfPayments;
+      }
+
       const { data: bookingData } = await axios.post(
-        `${backendUrl}/booking/flight-order`,
-        { flightOffer: flightOfferStr, travelers, payment: paymentDetails }
+        `${backendUrl}/flights/flight-order`,
+        payload
       );
 
-      console.log("Backend response:", bookingData); // Debug backend response
-      console.log("Booking data:", travelers);
       navigate("/booking-success", {
-        state: { bookingData, passengers, contact, flight },
+        state: { bookingData, passengers, contact: contactNormalized, flight },
       });
     } catch (err: any) {
       console.error("Booking error:", err);
       setError(
-        err.response?.data?.message ||
-          err.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Booking failed. Please try again or contact support."
       );
     } finally {
@@ -134,8 +226,8 @@ const ReviewConfirmation: React.FC = () => {
     }
   };
 
-  const total = parseFloat(flight.totalPrice) * passengers.length;
-  const baseFare = parseFloat(flight.basePrice) * passengers.length;
+  const total = parseFloat(flight?.totalPrice ?? "0") * passengers.length;
+  const baseFare = parseFloat(flight?.basePrice ?? "0") * passengers.length;
   const taxes = total - baseFare;
 
   if (!flight || passengers.length === 0) {
@@ -177,7 +269,7 @@ const ReviewConfirmation: React.FC = () => {
               <CardContent>
                 <TravelerDetails passengers={passengers} navigate={navigate} />
                 <Divider sx={{ my: 3 }} />
-                <ContactInformation contact={contact} />
+                <ContactInformation contact={contactNormalized} />
                 <Divider sx={{ my: 3 }} />
                 <PaymentMethod
                   onConfirmBooking={handleConfirmBooking}
@@ -211,11 +303,7 @@ const ReviewConfirmation: React.FC = () => {
           onClose={() => setError(null)}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert
-            onClose={() => setError(null)}
-            severity="error"
-            sx={{ width: "100%" }}
-          >
+          <Alert onClose={() => setError(null)} severity="error" sx={{ width: "100%" }}>
             {error}
           </Alert>
         </Snackbar>

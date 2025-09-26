@@ -115,47 +115,57 @@ const FlightSearch: React.FC = () => {
     );
   };
 
-  const createAutocomplete = (
-    options: any[],
-    inputValue: string,
-    onInputChange: (value: string) => void,
-    onChange: (value: any) => void,
-    placeholder: string,
-    isFromField = true,
-    label?: string
-  ) => (
-    <Autocomplete
-      freeSolo
-      options={options}
-      getOptionLabel={(option) => typeof option === "string" ? option : option.label}
-      inputValue={inputValue}
-      onInputChange={(_, newInputValue) => onInputChange(newInputValue)}
-      onChange={(_, value) => {
-        if (value && typeof value !== "string") onChange(value);
-      }}
-      filterOptions={(options) => options}
-      loading={isFromField ? isFromLoading : isToLoading}
-      noOptionsText="No locations found"
-      renderOption={(props, option) => renderAutocompleteOption(props, option, isFromField)}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          placeholder={placeholder}
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: (
-              <InputAdornment position="start">
-                {isFromField ? <FlightTakeoff /> : <FlightLand />}
-              </InputAdornment>
-            ),
-            sx: { borderRadius: "14px" },
-          }}
-          sx={commonInputStyles}
-        />
-      )}
-    />
-  );
+const createAutocomplete = (
+  options: any[],
+  inputValue: string,
+  onInputChange: (value: string) => void,
+  onChange: (value: any) => void,
+  placeholder: string,
+  isFromField = true,
+  label?: string
+) => (
+  <Autocomplete
+    freeSolo
+    options={options}
+    getOptionLabel={(option) => typeof option === "string" ? option : option?.label || ""}
+    inputValue={inputValue}
+    onInputChange={(_, newInputValue, reason) => {
+      if (reason === "input" || reason === "clear") {
+        onInputChange(newInputValue);
+      }
+    }}
+    onChange={(_, value) => {
+      // Handle both object selections and clear operations
+      if (value === null) {
+        // Clear the selected value when X is clicked
+        onChange(null);
+      } else if (value && typeof value !== "string") {
+        onChange(value);
+      }
+    }}
+    filterOptions={(options) => options}
+    loading={isFromField ? isFromLoading : isToLoading}
+    noOptionsText="No locations found"
+    renderOption={(props, option) => renderAutocompleteOption(props, option, isFromField)}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        label={label}
+        placeholder={placeholder}
+        InputProps={{
+          ...params.InputProps,
+          startAdornment: (
+            <InputAdornment position="start">
+              {isFromField ? <FlightTakeoff /> : <FlightLand />}
+            </InputAdornment>
+          ),
+          sx: { borderRadius: "14px" },
+        }}
+        sx={commonInputStyles}
+      />
+    )}
+  />
+);
 
   const validateInputs = () => {
     if (tripType === "multi") {

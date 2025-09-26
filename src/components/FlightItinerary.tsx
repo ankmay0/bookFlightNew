@@ -10,14 +10,16 @@ interface FlightItineraryProps {
   flight: Flight;
 }
 
-// Utility function to parse duration string (e.g., "2h 30m") to minutes
-const parseDurationToMinutes = (duration: string): number => {
-  const [hours, minutes] = duration.split(" ").map((part) => {
-    const num = parseInt(part.replace(/\D/g, ""));
-    return isNaN(num) ? 0 : num;
-  });
-  return hours * 60 + (minutes || 0);
+const parseDurationToMinutes = (duration?: string | null): number => {
+  const [h = "0", m = "0"] = ((typeof duration === "string" ? duration : "").trim())
+    .split(/\s+/)
+    .map(p => p.replace(/\D/g, ""))
+    .slice(0, 2);
+  const hours = Number.parseInt(h || "0", 10);
+  const minutes = Number.parseInt(m || "0", 10);
+  return (Number.isNaN(hours) ? 0 : hours) * 60 + (Number.isNaN(minutes) ? 0 : minutes);
 };
+
 
 // Utility function to format minutes to "Xh Ym"
 const formatMinutesToDuration = (totalMinutes: number): string => {
@@ -38,9 +40,8 @@ const FlightItinerary: React.FC<FlightItineraryProps> = ({ flight }) => {
     const legDurations = trip.legs.reduce((total, leg) => {
       return total + parseDurationToMinutes(leg.duration);
     }, 0);
-    const layoverDuration = trip.totalLayoverDuration
-      ? parseDurationToMinutes(trip.totalLayoverDuration)
-      : 0;
+    const layoverDuration = trip.totalLayoverDuration ? parseDurationToMinutes(trip.totalLayoverDuration) : 0;
+
     return formatMinutesToDuration(legDurations + layoverDuration);
   };
 

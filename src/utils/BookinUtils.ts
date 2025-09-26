@@ -18,7 +18,7 @@ export const fetchBooking = async (
   try {
     const encodedId = encodeURIComponent(searchText);
     console.log(`Fetching booking for ID: ${encodedId}`);
-    const res = await fetch(`http://localhost:8080/booking/flight-order/${encodedId}`, {
+    const res = await fetch(`http://localhost:8080/flights/flight-order/${encodedId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });

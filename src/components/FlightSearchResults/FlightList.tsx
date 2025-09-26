@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Grid,
@@ -37,29 +37,49 @@ const getAirlineIconURL = (code: string): string =>
   airlinesData[code as keyof typeof airlinesData]?.icon ||
   `https://content.airhex.com/content/logos/airlines_${code?.toUpperCase?.() ?? ""}_75_75_s.png`;
 
-const airportCityMap: { [key: string]: string } = {
-  EWR: "Newark",
-  JFK: "New York",
-  LGA: "New York",
-  LAX: "Los Angeles",
-  ORD: "Chicago",
-  ATL: "Atlanta",
-  DFW: "Dallas",
-  SFO: "San Francisco",
-  SEA: "Seattle",
-  BOS: "Boston",
-  DEL: "Delhi",
-  BOM: "Mumbai",
-  BLR: "Bengaluru",
-  MAA: "Chennai",
-  HYD: "Hyderabad",
-  CCU: "Kolkata",
-  DXB: "Dubai",
-  PDX: "Portland",
+// Updated to handle new location structure
+const getCityName = (airportCode: string, locations: any[] = []): string => {
+  // First try to find the airport in the locations data
+  for (const location of locations) {
+    // Check if this location is the airport we're looking for
+    if (location.iata === airportCode) {
+      return location.name;
+    }
+    
+    // Check if this location has groupData (city with airports)
+    if (location.groupData && Array.isArray(location.groupData)) {
+      const airport = location.groupData.find((ap: any) => ap.iata === airportCode);
+      if (airport) {
+        // Return the city name if available, otherwise the airport name
+        return airport.city || airport.name || airportCode;
+      }
+    }
+  }
+  
+  // Fallback to a static mapping if not found in locations
+  const airportCityMap: { [key: string]: string } = {
+    EWR: "Newark",
+    JFK: "New York",
+    LGA: "New York",
+    LAX: "Los Angeles",
+    ORD: "Chicago",
+    ATL: "Atlanta",
+    DFW: "Dallas",
+    SFO: "San Francisco",
+    SEA: "Seattle",
+    BOS: "Boston",
+    DEL: "Delhi",
+    BOM: "Mumbai",
+    BLR: "Bengaluru",
+    MAA: "Chennai",
+    HYD: "Hyderabad",
+    CCU: "Kolkata",
+    DXB: "Dubai",
+    PDX: "Portland",
+  };
+  
+  return airportCityMap[airportCode?.toUpperCase?.()] || airportCode;
 };
-
-const getCityName = (airportCode: string): string =>
-  airportCityMap[airportCode?.toUpperCase?.()] || airportCode;
 
 // Helper function to format dates
 const formatDate = (dateString: string): string => {
@@ -68,26 +88,6 @@ const formatDate = (dateString: string): string => {
     day: '2-digit', 
     month: 'short' 
   }).replace(',', '');
-};
-
-// Helper function to count flights by stops
-const countFlightsByStops = (flights: Flight[]) => {
-  const counts = {
-    "Non-stop": 0,
-    "1 stop": 0,
-    "2+ stops": 0
-  };
-
-  flights.forEach(flight => {
-    flight.trips.forEach(trip => {
-      const stops = trip.stops || 0;
-      if (stops === 0) counts["Non-stop"]++;
-      else if (stops === 1) counts["1 stop"]++;
-      else if (stops >= 2) counts["2+ stops"]++;
-    });
-  });
-
-  return counts;
 };
 
 interface FlightListProps {
@@ -117,8 +117,10 @@ interface FlightListProps {
   currentStep: BookingStep;
   segments?: Array<{ from: string; to: string; date: string }>;
   selectedFlights?: (Flight | null)[];
-  departureDate?: string; // Added for date display
-  returnDate?: string;    // Added for date display
+  departureDate?: string;
+  returnDate?: string;
+  // Add locations prop to access the new location data structure
+  locations?: any[];
 }
 
 // ========================== FlightCard ==========================
@@ -126,7 +128,8 @@ const FlightCard: React.FC<{
   flight: Flight;
   tripIndex: number;
   onSelect: () => void;
-}> = ({ flight, tripIndex, onSelect }) => {
+  locations?: any[]; // Add locations prop
+}> = ({ flight, tripIndex, onSelect, locations }) => {
   const trip = flight.trips[tripIndex];
   if (!trip || !trip.legs?.length) return null;
 
@@ -137,8 +140,9 @@ const FlightCard: React.FC<{
   const prettyTime = (dt: string) =>
     new Date(dt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  // Update cityText to use locations data
   const cityText = (airport: string) =>
-    `${getCityName(airport)} (${airport})`;
+    `${getCityName(airport, locations)} (${airport})`;
 
   const formatPrice = (price: number | string | undefined) =>
     typeof price === "number" ? price.toLocaleString("en-IN") : String(price ?? 0);
@@ -322,36 +326,53 @@ const FlightList: React.FC<FlightListProps> = ({
   selectedFlights,
   departureDate,
   returnDate,
+  locations, // Add locations prop
 }) => {
+
+    useEffect(() => {
+    console.log("[FlightList] filteredFlights:", filteredFlights);
+    console.log("[FlightList] selectedDepartureFlight:", selectedDepartureFlight);
+    console.log("[FlightList] segments:", segments);
+    console.log("[FlightList] selectedFlights:", selectedFlights);
+    console.log("[FlightList] loading:", loading);
+    console.log("[FlightList] from/to:", from, to);
+    console.log("[FlightList] locations:", locations);
+  }, [filteredFlights, selectedDepartureFlight, segments, selectedFlights, loading, from, to, locations]);
+
   const isMultiCity = segments && segments.length > 1;
   const segmentIndex =
     isMultiCity && currentStep.startsWith("segment-")
       ? parseInt(currentStep.split("-")[1])
       : 0;
-  const segmentFlights = filteredFlights.filter(
-    (flight) => flight.trips[0]?.from === from && flight.trips[0]?.to === to
-  );
-  // In FlightList.tsx, add this before the return statement
-const countFlightsByStops = (flights: Flight[]) => {
-  const counts = {
-    "2+ stops": 0,
-    "1 stop": 0,
-    "Non-stop": 0,
+const segmentFlights = filteredFlights;
+
+  
+  // Helper function to count flights by stops  
+  const countFlightsByStops = (flights: Flight[]) => {
+    const counts = {
+      "2+ stops": 0,
+      "1 stop": 0,
+      "Non-stop": 0,
+    };
+
+    flights.forEach(flight => {
+      flight.trips.forEach(trip => {
+        const stops = trip.stops ?? 0;
+        if (stops === 0) counts["Non-stop"]++;
+        else if (stops === 1) counts["1 stop"]++;
+        else counts["2+ stops"]++;
+      });
+    });
+
+    return counts;
   };
 
-  flights.forEach(flight => {
-    flight.trips.forEach(trip => {
-      const stops = trip.stops ?? 0;
-      if (stops === 0) counts["Non-stop"]++;
-      else if (stops === 1) counts["1 stop"]++;
-      else counts["2+ stops"]++;
-    });
-  });
+  const stopCounts = countFlightsByStops(filteredFlights);
 
-  return counts;
-};
+  // Update getCityName calls to pass locations
+  const getCityNameWithLocations = (code: string) => getCityName(code, locations);
 
-const stopCounts = countFlightsByStops(filteredFlights);
+  
 
   return (
     <Grid container spacing={3}>
@@ -389,7 +410,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
         ) : isMultiCity && currentStep.startsWith("segment-") ? (
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Flight for Segment {segmentIndex + 1}: {getCityName(from)} to {getCityName(to)}
+              Choose Flight for Segment {segmentIndex + 1}: {getCityNameWithLocations(from)} to {getCityNameWithLocations(to)}
               {segments && segments[segmentIndex]?.date && (
                 <span> on {formatDate(segments[segmentIndex].date)}</span>
               )}
@@ -405,6 +426,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
                   flight={flight}
                   tripIndex={0}
                   onSelect={() => handleDepartureSelect(flight)}
+                  locations={locations} // Pass locations to FlightCard
                 />
               ))
             )}
@@ -420,7 +442,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
         ) : !selectedDepartureFlight ? (
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Departure Flight from {getCityName(from)} to {getCityName(to)}
+              Choose Your Departure Flight from {getCityNameWithLocations(from)} to {getCityNameWithLocations(to)}
               {departureDate && <span> on {formatDate(departureDate)}</span>}
             </Typography>
             {segmentFlights.length === 0 ? (
@@ -434,6 +456,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
                   flight={flight}
                   tripIndex={0}
                   onSelect={() => handleDepartureSelect(flight)}
+                  locations={locations} // Pass locations to FlightCard
                 />
               ))
             )}
@@ -441,7 +464,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
         ) : (
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={600}>
-              Choose Your Return Flight from {getCityName(to)} to {getCityName(from)}
+              Choose Your Return Flight from {getCityNameWithLocations(to)} to {getCityNameWithLocations(from)}
               {returnDate && <span> on {formatDate(returnDate)}</span>}
             </Typography>
             {segmentFlights.length === 0 ? (
@@ -455,6 +478,7 @@ const stopCounts = countFlightsByStops(filteredFlights);
                   flight={flight}
                   tripIndex={1}
                   onSelect={() => handleConfirmSelection(flight)}
+                  locations={locations} // Pass locations to FlightCard
                 />
               ))
             )}

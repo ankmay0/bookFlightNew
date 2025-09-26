@@ -1,5 +1,18 @@
 import { Flight } from "../../src/components/Types/FlightTypes";
 
+// Helper function to extract flights from API response (handles both formats)
+const extractFlightsFromResponse = (data: any): Flight[] => {
+  if (Array.isArray(data)) {
+    // Response is direct array: [...]
+    return data;
+  } else if (data && Array.isArray(data.flightsAvailable)) {
+    // Response is wrapped: {"flightsAvailable": [...]}
+    return data.flightsAvailable;
+  }
+  // Fallback for unexpected format
+  return [];
+};
+
 export const fetchFlights = async (
   isMultiCity: boolean,
   segments: { from: string; to: string; date: string }[] | undefined,
@@ -35,6 +48,7 @@ export const fetchFlights = async (
       setLoading(false);
       return;
     }
+    console.log(segments);
     setLoading(true);
     const fetchPromises = segments.map((seg: { from: string; to: string; date: string }) => {
       if (!seg.from || !seg.to || !seg.date || (!adults && !children)) {
@@ -65,7 +79,7 @@ export const fetchFlights = async (
         const errors: string[] = [];
         results.forEach((result, idx) => {
           if (result.status === "fulfilled") {
-            const flightsArr: Flight[] = Array.isArray(result.value.flightsAvailable) ? result.value.flightsAvailable : [];
+            const flightsArr: Flight[] = extractFlightsFromResponse(result.value);
             segmentFlightsArray.push(flightsArr);
           } else {
             errors.push(`Segment ${idx + 1}: ${result.reason.message}`);
@@ -102,10 +116,15 @@ export const fetchFlights = async (
     }
     const adt = adults || 0,
       chd = children || 0;
-    let url = `${backendUrl}/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}&currencyCode=INR`;
+    let url = `${backendUrl}/flights/search?originLocationCode=${from}&destinationLocationCode=${to}&departureDate=${departDate}`;
+    if (returnDate) url += `&returnDate=${returnDate}`;
     if (adt) url += `&adults=${adt}`;
     if (chd) url += `&children=${chd}`;
-    if (returnDate) url += `&returnDate=${returnDate}`;
+    url += `&infants=0`;
+    url += `&travelClass=ECONOMY`;
+    url += `&nonStop=false`;
+    url += `&currencyCode=INR`;
+    url += `&max=5`;
     setLoading(true);
     fetch(url)
       .then((res) => {
@@ -122,7 +141,7 @@ export const fetchFlights = async (
       })
       .then((data) => {
         console.log("Flight search response:", data);
-        let flightsArr: Flight[] = Array.isArray(data.flightsAvailable) ? data.flightsAvailable : [];
+        let flightsArr: Flight[] = extractFlightsFromResponse(data);
         setFlights(flightsArr);
         setFilteredFlights(flightsArr);
         const prices = flightsArr.map((f) => parseFloat(f.totalPrice || f.basePrice || "0") || 0);
