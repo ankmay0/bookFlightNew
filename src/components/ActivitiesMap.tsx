@@ -40,7 +40,7 @@ function ActivitiesMap({ activities, coordinates }: { activities: any, coordinat
                 center={
                     coordinates ? { lat: coordinates.latitude, lng: coordinates.longitude } :
                         { lat: 51.5074, lng: -0.1278 }}
-                zoom={10}
+                zoom={15}
             // onLoad={(map) => setMap(map)}
             >
                 <Marker position={{ lat: coordinates.latitude, lng: coordinates.longitude }} label="You" />

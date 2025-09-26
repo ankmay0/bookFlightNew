@@ -60,6 +60,7 @@ const ActivitiesScreen: React.FC = () => {
 
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [usingDefaultLocation, setUsingDefaultLocation] = useState(false);
+  const [locationName, setLocationName] = useState('');
 
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -151,6 +152,7 @@ const ActivitiesScreen: React.FC = () => {
       longitude: parseFloat(result.lon)
     };
 
+    setLocationName(result.display_name);
     setLocation(newCoords);
     setUsingDefaultLocation(false);
     setSearchQuery(result.display_name);
@@ -739,7 +741,8 @@ const addActivityMarkers = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Showing activities near your location
-              {usingDefaultLocation && ' (Using Delhi location)'}
+              {/* {usingDefaultLocation && ' (Using Delhi location)'} */}
+              {locationName && `Showing activities near ${locationName}`}
             </div>
           )}
         </div>
