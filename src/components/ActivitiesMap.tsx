@@ -33,8 +33,8 @@ function ActivitiesMap({ activities, coordinates }: { activities: any, coordinat
 
     return (
         <Box sx={{ height: '400px', width: '100%', marginTop: 2, marginBottom: 2 }}>
-            <Button onClick={() => console.log(coordinates)}>coords</Button>
-            <Button onClick={() => console.log(activities)}>activities</Button>
+            {/* <Button onClick={() => console.log(coordinates)}>coords</Button>
+            <Button onClick={() => console.log(activities)}>activities</Button> */}
             <GoogleMap
                 mapContainerStyle={{ width: '100%', height: '400px' }}
                 center={

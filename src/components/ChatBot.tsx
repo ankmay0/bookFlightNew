@@ -210,6 +210,7 @@ const ActivityMap: React.FC<{ activities: Activity[]; coords: { latitude: number
 
 const ChatBot: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
+  const [expandedText, setExpandedText] = useState<{ [key: number]: boolean }>({});
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", text: "Hi 👋, how can I help you with your **flight booking** or **activities**?" },
   ]);
@@ -315,7 +316,7 @@ const ChatBot: React.FC = () => {
       }));
       const apiUserMessage = { role: userMessage.role, content: userMessage.text };
 
-      const response = await fetch("https://9ae2cafcf8ef.ngrok-free.app/", {
+      const response = await fetch("https://0e9d8b54762c.ngrok-free.app", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -554,8 +555,18 @@ const ChatBot: React.FC = () => {
         {activity.name}
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        {activity.shortDescription || stripHtmlTags(activity.description)}
+        {/* {activity.shortDescription || stripHtmlTags(activity.description)} */}
+        {/* {`${(activity.shortDescription || stripHtmlTags(activity.description)).split(" ").slice(0, 20).join(" ")}...`} */}
+        {expandedText[index] ? <>{activity.shortDescription || stripHtmlTags(activity.description)}</> : <>{`${(activity.shortDescription || stripHtmlTags(activity.description)).split(" ").slice(0, 20).join(" ")}...`}</>}
       </Typography>
+      <Button
+        size="small"
+        onClick={() => setExpandedText((prev) => ({ ...prev, [index]: !prev[index] }))}
+        sx={{ textTransform: "none", mt: 1 }}
+      >
+        {expandedText[index] ? "Show Less" : "Read More"}
+      </Button>
+
       <Typography variant="body1" fontWeight={600} sx={{ mt: 1 }}>
         {activity.price.amount} {activity.price.currencyCode}
       </Typography>
@@ -773,7 +784,7 @@ const ChatBot: React.FC = () => {
                     <Typography variant="body1" sx={{ mb: 1 }} dangerouslySetInnerHTML={{ __html: parseBoldText(msg.text) }} />
                     {msg.activities.length > 0 ? (
                       <>
-                        {/* {msg.activities.map((activity, actIdx) => renderActivityCard(activity, actIdx))} */}
+                        {msg.activities.map((activity, actIdx) => renderActivityCard(activity, actIdx))}
                         {/* <ActivityMap activities={msg.activities} coords={msg.activityParams.coords} /> */}
                         <ActivitiesMap activities={msg.activities} coordinates={msg.activityParams.coords} />
                         {/* <ActivitiesMap activities={activitiesMap} coordinates={{

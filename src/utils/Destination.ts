@@ -14,7 +14,7 @@ export const destinations: Destination[] = [
   {
     city: "Bangalore",
     country: "India",
-    image: "https://images.unsplash.com/photo-1596176530529-78163e4f7af2?w=800&h=600&fit=crop&auto=format",
+    image: "https://media.istockphoto.com/id/1192229302/photo/bangalore-skyline-city.jpg?s=1024x1024&w=is&k=20&c=SKK1Yev3v6DoL8FLEITTbjp1nPRoTznyFpuPTFKVVV4=",
   },
   {
     city: "New York",

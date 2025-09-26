@@ -44,8 +44,8 @@ interface SearchResult {
 const DEFAULT_COORDINATES = {
   // latitude: 41.39715,
   // longitude: 2.160873
-  latitude: 28.6139,
-  longitude: 77.209
+  latitude: 51.5074,
+  longitude: -0.1278
 };
 
 // Google Maps API Key
@@ -589,7 +589,7 @@ const addActivityMarkers = () => {
 
         {item.shortDescription && (
           <p className="text-gray-600 text-sm mb-3 italic line-clamp-2">
-            {item.shortDescription}
+            {/* {item.shortDescription} */}
           </p>
         )}
 
@@ -740,9 +740,9 @@ const addActivityMarkers = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Showing activities near your location
+              {locationName ? `Showing activities near ${locationName}` : "Showing activities near your location"}
               {/* {usingDefaultLocation && ' (Using Delhi location)'} */}
-              {locationName && `Showing activities near ${locationName}`}
+              {/* {locationName && `Showing activities near ${locationName}`} */}
             </div>
           )}
         </div>
@@ -795,7 +795,7 @@ const addActivityMarkers = () => {
             <>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {filteredActivities.length} Activity{filteredActivities.length !== 1 ? 'ies' : ''} Found
+                  {filteredActivities.length} Activit{filteredActivities.length !== 1 ? 'ies' : 'y'} Found
                 </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
