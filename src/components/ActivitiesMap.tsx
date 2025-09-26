@@ -131,123 +131,168 @@ function ActivitiesMap({ activities, coordinates }: { activities: any, coordinat
                     ))
                 }
                 {selectedActivity && (
-                    <InfoWindow
-                    position={{
-                        lat: Number(selectedActivity?.geoCode?.latitude ?? 0),
-                        lng: Number(selectedActivity?.geoCode?.longitude ?? 0),
-                    }}
-                    onCloseClick={() => setSelectedActivity(null)}
-                    >
-                        <div
-                            style={{
-                            background: "#fff",
-                            borderRadius: "10px",
-                            boxShadow: "0 2px 8px rgba(40,50,60,0.10)",
-                            padding: "10px",
-                            minWidth: "180px",
-                            maxWidth: "230px",
-                            fontFamily: "Inter, Roboto, Arial, sans-serif",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: "6px",
-                            }}
-                        >
-                            {/* Images row */}
-                            <div
-                            style={{
-                                width: "100%",
-                                display: "flex",
-                                gap: "4px",
-                                overflowX: "auto",
-                                justifyContent: "center",
-                                marginBottom: "3px"
-                            }}
-                            >
-                            {selectedActivity.pictures?.slice(0, 2).map((src: string, idx: number) => (
-                                <img
-                                key={idx}
-                                src={src}
-                                alt={selectedActivity.title}
-                                style={{
-                                    width: "40px",
-                                    height: "40px",
-                                    objectFit: "cover",
-                                    borderRadius: "6px",
-                                    border: "1px solid #eee",
-                                    background: "#fafafd",
-                                }}
-                                />
-                            ))}
-                            </div>
-                            {/* Title */}
-                            <div
-                            style={{
-                                fontWeight: 500,
-                                color: "#247ef2",
-                                fontSize: "0.98rem",
-                                textAlign: "center",
-                                margin: "0 0 2px 0",
-                                lineHeight: "1.18"
-                            }}
-                            >
-                            {selectedActivity.name.length > 32
-                                ? selectedActivity.name.slice(0, 29) + "..."
-                                : selectedActivity.name}
-                            </div>
-                            {/* Price */}
-                            <div
-                            style={{
-                                fontWeight: 600,
-                                color: "#354868",
-                                fontSize: "0.93rem",
-                                marginBottom: "2px",
-                            }}
-                            >
-                            {selectedActivity.price &&
-                                `${selectedActivity.price.amount} ${selectedActivity.price.currencyCode}`}
-                            </div>
-                            {/* Description */}
-                            <div
-                            style={{
-                                color: "#4B5A75",
-                                fontSize: "0.87rem",
-                                maxHeight: "45px",
-                                overflow: "hidden",
-                                marginBottom: "2px",
-                                textAlign: "left",
-                            }}
-                            title={selectedActivity.description?.replace(/(<([^>]+)>)/gi, "")}
-                            dangerouslySetInnerHTML={{
-                                __html: selectedActivity.description
-                                ? selectedActivity.description.replace(/(<([^>]+)>)/gi, "")?.slice(0, 68) + "..."
-                                : "",
-                            }}
-                            />
-                            {/* Book Button */}
-                            <a
-                            href={selectedActivity.bookingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                                marginTop: "3px",
-                                background: "linear-gradient(90deg, #2270e2 0%, #40edc7 100%)",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "5px",
-                                padding: "6px 16px",
-                                fontWeight: 600,
-                                fontSize: "0.98rem",
-                                textDecoration: "none",
-                                boxShadow: "0 1px 4px rgba(40,110,160,0.10)",
-                                cursor: "pointer",
-                                textAlign: "center",
-                            }}
-                            >
-                            Book
-                            </a>
-                        </div>
-                    </InfoWindow>
+<InfoWindow
+  position={{
+    lat: Number(selectedActivity?.geoCode?.latitude ?? 0),
+    lng: Number(selectedActivity?.geoCode?.longitude ?? 0),
+  }}
+  onCloseClick={() => setSelectedActivity(null)}
+>
+  <div
+    style={{
+      background: "#fff",
+      borderRadius: "10px",
+      boxShadow: "0 3px 10px rgba(40,50,60,0.08)",
+      padding: "0",
+      minWidth: "210px",
+      maxWidth: "235px",
+      fontFamily: "Inter, Roboto, Arial, sans-serif",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+    }}
+  >
+    {/* Image (Banner) */}
+    <div style={{ position: "relative", width: "100%", height: "110px", overflow: "hidden" }}>
+      <img
+        src={selectedActivity.pictures?.[0]}
+        alt={selectedActivity.title}
+        style={{
+          width: "100%",
+          height: "110px",
+          objectFit: "cover"
+        }}
+      />
+      {/* Type Badge */}
+      <span style={{
+        position: "absolute",
+        top: 7,
+        left: 7,
+        background: "#f5f7fa",
+        color: "#606684",
+        fontSize: "0.85rem",
+        borderRadius: "18px",
+        padding: "3px 6px",
+        fontWeight: 500,
+        boxShadow: "0 1px 4px rgba(60,60,70,0.05)"
+      }}>
+        <span style={{marginRight: "4px", fontSize:"0.95em"}}>🍽️</span>
+        Food
+      </span>
+      {/* Price Chip */}
+      <span style={{
+        position: "absolute",
+        top: 7,
+        right: 7,
+        background: "#37d78d",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: "0.92rem",
+        borderRadius: "6px",
+        padding: "2px 8px",
+        boxShadow: "0 2px 6px rgba(50,180,120,0.10)"
+      }}>
+        {`${selectedActivity.price?.amount} ${selectedActivity.price?.currencyCode || 'INR'}`}
+      </span>
+    </div>
+    {/* Card Body: smaller text, less spacing */}
+    <div style={{ padding: "6px 6px 2px 6px", flex: 1 }}>
+      <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "5px" }}>
+        <span style={{
+          background: "#fff",
+          border: "1px solid #eef0f3",
+          borderRadius: "12px",
+          color: "#f9a825",
+          fontWeight: 600,
+          fontSize: "0.82rem",
+          padding: "2px 7px"
+        }}>
+          ★ 4.8
+        </span>
+        <span style={{
+          color: "#A0A8BC",
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center"
+        }}>
+          ⏱️ 6h
+        </span>
+        <span style={{
+          color: "#A0A8BC",
+          fontSize: "0.85rem",
+          display: "flex",
+          alignItems: "center",
+        }}>
+          📍 {`${Number(selectedActivity.geoCode?.latitude ?? 0).toFixed(2)}, ${Number(selectedActivity.geoCode?.longitude ?? 0).toFixed(2)}`}
+        </span>
+      </div>
+      <div style={{
+        fontWeight: 500,
+        color: "#253346",
+        fontSize: "0.95rem",
+        margin: "4px 0 2px 0",
+        lineHeight: "1.12"
+      }}>
+        {selectedActivity.name.length > 36
+          ? selectedActivity.name.slice(0, 33) + "..."
+          : selectedActivity.name}
+      </div>
+      {/* <div style={{
+        color: "#888",
+        fontSize: "0.81rem",
+        fontStyle: "italic",
+        margin: "0 0 2px 0",
+        minHeight: "14px",
+      }}>
+        {selectedActivity.shortDescription }
+      </div> */}
+      <div style={{
+        color: "#545A66",
+        fontSize: "0.84rem",
+        maxHeight: "29px",
+        overflow: "hidden",
+        textOverflow: "ellipsis"
+      }}
+        title={selectedActivity.description?.replace(/(<([^>]+)>)/gi, "")}
+        dangerouslySetInnerHTML={{
+          __html: selectedActivity.description
+            ? selectedActivity.description.replace(/(<([^>]+)>)/gi, "").slice(0, 47) + "..."
+            : "",
+        }}
+      />
+    </div>
+    {/* Book Button: smaller */}
+    <div style={{
+      background: "#f6f7fc",
+      padding: "8px",
+      display: "flex",
+      justifyContent: "center",
+      borderBottomLeftRadius: "10px",
+      borderBottomRightRadius: "10px"
+    }}>
+      <a
+        href={selectedActivity.bookingLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          background: "#1c60f7",
+          color: "#fff",
+          borderRadius: "5px",
+          padding: "6px 18px",
+          fontWeight: 600,
+          fontSize: "0.93rem",
+          textDecoration: "none",
+          boxShadow: "0 1px 6px rgba(50,120,220,0.08)",
+          cursor: "pointer",
+          textAlign: "center"
+        }}
+      >
+        Book Now
+      </a>
+    </div>
+  </div>
+</InfoWindow>
+
                 )}
             </GoogleMap>
         </Box>

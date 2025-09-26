@@ -315,7 +315,7 @@ const ChatBot: React.FC = () => {
       }));
       const apiUserMessage = { role: userMessage.role, content: userMessage.text };
 
-      const response = await fetch("https://ea00aa54820c.ngrok-free.app", {
+      const response = await fetch("https://9ae2cafcf8ef.ngrok-free.app/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
