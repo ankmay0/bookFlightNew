@@ -46,7 +46,7 @@ const DEFAULT_COORDINATES = {
 };
 
 // Google Maps API Key
-const GOOGLE_MAPS_API_KEY = 'AIzaSyC0DU0EE254dfgrw_TWxrBgmslLTnFUv4M';
+const GOOGLE_MAPS_API_KEY = '';
 
 const ActivitiesScreen: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
