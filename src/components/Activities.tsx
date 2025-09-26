@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ActivitiesMap from './ActivitiesMap';
 
 // Google Maps type declarations
 declare global {
@@ -798,7 +799,7 @@ const addActivityMarkers = () => {
         </div>
 
         {/* MAP VIEW - Enhanced with Images */}
-        <div className={viewMode === 'map' ? 'block' : 'hidden'}>
+        {/* <div className={viewMode === 'map' ? 'block' : 'hidden'}>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-300" style={{ height: '75vh', minHeight: '600px' }}>
             {!isGoogleMapsLoaded ? (
               <div className="flex items-center justify-center h-full bg-gray-50">
@@ -814,7 +815,7 @@ const addActivityMarkers = () => {
 
                
 
-                {/* Enhanced Results Summary */}
+               
                 <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-4 border border-gray-200">
                   <div className="text-base font-semibold text-gray-900 mb-1">
                     {filteredActivities.length} Activity{filteredActivities.length !== 1 ? 'ies' : ''} Found
@@ -824,7 +825,7 @@ const addActivityMarkers = () => {
                   </div>
                 </div>
 
-                {/* Quick Actions Panel */}
+                
                 <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-3 border border-gray-200">
                   <div className="flex flex-col gap-2">
                     <button
@@ -854,10 +855,12 @@ const addActivityMarkers = () => {
                     </button>
                   </div>
                 </div>
+                
               </>
             )}
           </div>
-        </div>
+        </div> */}
+        <ActivitiesMap activities={filteredActivities} coordinates={location}/>
       </main>
     </div>
   );
