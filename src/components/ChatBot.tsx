@@ -16,6 +16,7 @@ import Style from 'ol/style/Style';
 import CircleStyle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
 import Stroke from 'ol/style/Stroke';
+import ActivitiesMap from "./ActivitiesMap";
 
 interface FlightParams {
   origin: string;
@@ -314,7 +315,7 @@ const ChatBot: React.FC = () => {
       }));
       const apiUserMessage = { role: userMessage.role, content: userMessage.text };
 
-      const response = await fetch("https://cd4d5fecf9d9.ngrok-free.app", {
+      const response = await fetch("https://15412d70fb07.ngrok-free.app", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -569,6 +570,76 @@ const ChatBot: React.FC = () => {
     </Paper>
   );
 
+  // ============ for testing
+  const activitiesMap = [
+        {
+            "id": "65709974",
+            "type": "activity",
+            "title": "Four Centuries of Entertainment on London's South Bank: A Self-Guided Audio Tour",
+            "subtitle": "None",
+            "description": "<div><p>Walk from London Bridge to the Tate Modern while you explore the South Bank of the River Thames at your own pace on this affordable self-guided tour...</p></div>",
+            "geoCode": {
+                "latitude": 51.5099787,
+                "longitude": -0.0859812
+            },
+            "images": [
+                "https://images.holibob.tech/eyJrZXkiOiJ...",
+                "https://images.holibob.tech/eyJrZXkiOiJ..."
+            ],
+            "bookingLink": "https://amadeus.booking.holibob.tech/product/e3a959a2-4ea7-4f2c-a72f-369ede3b6376",
+            "price": {
+                "currency": "GBP",
+                "amount": "6.0"
+            },
+            "duration": "45 minutes",
+            "additionalInfo": "None"
+        },
+        {
+            "id": "137341038",
+            "type": "activity",
+            "title": "Build Your Own 7-hour Private London Tour in a Black Cab",
+            "subtitle": "None",
+            "description": "<div><p>At <strong>Black Cab Heritage Tours</strong>, we have a wide range of private tours...</p></div>",
+            "geoCode": {
+                "latitude": 51.5069873,
+                "longitude": -0.123196
+            },
+            "images": [
+                "https://images.holibob.tech/eyJrZXkiOiJ...",
+                "https://images.holibob.tech/eyJrZXkiOiJ..."
+            ],
+            "bookingLink": "https://amadeus.booking.holibob.tech/product/7cc5ca39-9bde-43d4-90c5-222469997f12",
+            "price": {
+                "currency": "GBP",
+                "amount": "770.0"
+            },
+            "duration": "7 hours",
+            "additionalInfo": "None"
+        },
+        {
+            "id": "137341038",
+            "type": "activity",
+            "title": "Build Your Own 7-hour Private London Tour in a Black Cab",
+            "subtitle": "None",
+            "description": "<div><p>At <strong>Black Cab Heritage Tours</strong>, we have a wide range of private tours...</p></div>",
+            "geoCode": {
+                "latitude": 51.2039873,
+                "longitude": -0.097196
+            },
+            "images": [
+                "https://images.holibob.tech/eyJrZXkiOiJ...",
+                "https://images.holibob.tech/eyJrZXkiOiJ..."
+            ],
+            "bookingLink": "https://amadeus.booking.holibob.tech/product/7cc5ca39-9bde-43d4-90c5-222469997f12",
+            "price": {
+                "currency": "GBP",
+                "amount": "770.0"
+            },
+            "duration": "7 hours",
+            "additionalInfo": "None"
+        },
+    ]
+
   return (
     <div>
       {!chatOpen && (
@@ -702,8 +773,9 @@ const ChatBot: React.FC = () => {
                     <Typography variant="body1" sx={{ mb: 1 }} dangerouslySetInnerHTML={{ __html: parseBoldText(msg.text) }} />
                     {msg.activities.length > 0 ? (
                       <>
-                        {msg.activities.map((activity, actIdx) => renderActivityCard(activity, actIdx))}
-                        <ActivityMap activities={msg.activities} coords={msg.activityParams.coords} />
+                        {/* {msg.activities.map((activity, actIdx) => renderActivityCard(activity, actIdx))} */}
+                        {/* <ActivityMap activities={msg.activities} coords={msg.activityParams.coords} /> */}
+                        <ActivitiesMap activities={activitiesMap} coordinates={msg.activityParams.coords} />
                       </>
                     ) : (
                       <Paper

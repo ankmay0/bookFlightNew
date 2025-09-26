@@ -41,12 +41,14 @@ interface SearchResult {
 
 // Default coordinates for testing (Barcelona)
 const DEFAULT_COORDINATES = {
-  latitude: 41.39715,
-  longitude: 2.160873
+  // latitude: 41.39715,
+  // longitude: 2.160873
+  latitude: 28.6139,
+  longitude: 77.209
 };
 
 // Google Maps API Key
-const GOOGLE_MAPS_API_KEY = '';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyC0DU0EE254dfgrw_TWxrBgmslLTnFUv4M';
 
 const ActivitiesScreen: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -732,7 +734,7 @@ const addActivityMarkers = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Showing activities near your location
-              {usingDefaultLocation && ' (Using default location)'}
+              {usingDefaultLocation && ' (Using Delhi location)'}
             </div>
           )}
         </div>
