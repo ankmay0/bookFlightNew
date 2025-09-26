@@ -131,125 +131,123 @@ function ActivitiesMap({ activities, coordinates }: { activities: any, coordinat
                     ))
                 }
                 {selectedActivity && (
-<InfoWindow
-  position={{
-    lat: Number(selectedActivity?.geoCode?.latitude ?? 0),
-    lng: Number(selectedActivity?.geoCode?.longitude ?? 0),
-  }}
-  onCloseClick={() => setSelectedActivity(null)}
->
-  <div
-    style={{
-      background: "#fff",
-      borderRadius: "10px",
-      boxShadow: "0 2px 8px rgba(40,50,60,0.10)",
-      padding: "10px",
-      minWidth: "180px",
-      maxWidth: "230px",
-      fontFamily: "Inter, Roboto, Arial, sans-serif",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "6px",
-    }}
-  >
-    {/* Images row */}
-    <div
-      style={{
-        width: "100%",
-        display: "flex",
-        gap: "4px",
-        overflowX: "auto",
-        justifyContent: "center",
-        marginBottom: "3px"
-      }}
-    >
-      {selectedActivity.pictures?.slice(0, 2).map((src: string, idx: number) => (
-        <img
-          key={idx}
-          src={src}
-          alt={selectedActivity.title}
-          style={{
-            width: "40px",
-            height: "40px",
-            objectFit: "cover",
-            borderRadius: "6px",
-            border: "1px solid #eee",
-            background: "#fafafd",
-          }}
-        />
-      ))}
-    </div>
-    {/* Title */}
-    <div
-      style={{
-        fontWeight: 500,
-        color: "#247ef2",
-        fontSize: "0.98rem",
-        textAlign: "center",
-        margin: "0 0 2px 0",
-        lineHeight: "1.18"
-      }}
-    >
-      {selectedActivity.name.length > 32
-        ? selectedActivity.name.slice(0, 29) + "..."
-        : selectedActivity.name}
-    </div>
-    {/* Price */}
-    <div
-      style={{
-        fontWeight: 600,
-        color: "#354868",
-        fontSize: "0.93rem",
-        marginBottom: "2px",
-      }}
-    >
-      {selectedActivity.price &&
-        `${selectedActivity.price.amount} ${selectedActivity.price.currencyCode}`}
-    </div>
-    {/* Description */}
-    <div
-      style={{
-        color: "#4B5A75",
-        fontSize: "0.87rem",
-        maxHeight: "45px",
-        overflow: "hidden",
-        marginBottom: "2px",
-        textAlign: "left",
-      }}
-      title={selectedActivity.description?.replace(/(<([^>]+)>)/gi, "")}
-      dangerouslySetInnerHTML={{
-        __html: selectedActivity.description
-          ? selectedActivity.description.replace(/(<([^>]+)>)/gi, "")?.slice(0, 68) + "..."
-          : "",
-      }}
-    />
-    {/* Book Button */}
-    <a
-      href={selectedActivity.bookingLink}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        marginTop: "3px",
-        background: "linear-gradient(90deg, #2270e2 0%, #40edc7 100%)",
-        color: "#fff",
-        border: "none",
-        borderRadius: "5px",
-        padding: "6px 16px",
-        fontWeight: 600,
-        fontSize: "0.98rem",
-        textDecoration: "none",
-        boxShadow: "0 1px 4px rgba(40,110,160,0.10)",
-        cursor: "pointer",
-        textAlign: "center",
-      }}
-    >
-      Book
-    </a>
-  </div>
-</InfoWindow>
-
-                    
+                    <InfoWindow
+                    position={{
+                        lat: Number(selectedActivity?.geoCode?.latitude ?? 0),
+                        lng: Number(selectedActivity?.geoCode?.longitude ?? 0),
+                    }}
+                    onCloseClick={() => setSelectedActivity(null)}
+                    >
+                        <div
+                            style={{
+                            background: "#fff",
+                            borderRadius: "10px",
+                            boxShadow: "0 2px 8px rgba(40,50,60,0.10)",
+                            padding: "10px",
+                            minWidth: "180px",
+                            maxWidth: "230px",
+                            fontFamily: "Inter, Roboto, Arial, sans-serif",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "6px",
+                            }}
+                        >
+                            {/* Images row */}
+                            <div
+                            style={{
+                                width: "100%",
+                                display: "flex",
+                                gap: "4px",
+                                overflowX: "auto",
+                                justifyContent: "center",
+                                marginBottom: "3px"
+                            }}
+                            >
+                            {selectedActivity.pictures?.slice(0, 2).map((src: string, idx: number) => (
+                                <img
+                                key={idx}
+                                src={src}
+                                alt={selectedActivity.title}
+                                style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    objectFit: "cover",
+                                    borderRadius: "6px",
+                                    border: "1px solid #eee",
+                                    background: "#fafafd",
+                                }}
+                                />
+                            ))}
+                            </div>
+                            {/* Title */}
+                            <div
+                            style={{
+                                fontWeight: 500,
+                                color: "#247ef2",
+                                fontSize: "0.98rem",
+                                textAlign: "center",
+                                margin: "0 0 2px 0",
+                                lineHeight: "1.18"
+                            }}
+                            >
+                            {selectedActivity.name.length > 32
+                                ? selectedActivity.name.slice(0, 29) + "..."
+                                : selectedActivity.name}
+                            </div>
+                            {/* Price */}
+                            <div
+                            style={{
+                                fontWeight: 600,
+                                color: "#354868",
+                                fontSize: "0.93rem",
+                                marginBottom: "2px",
+                            }}
+                            >
+                            {selectedActivity.price &&
+                                `${selectedActivity.price.amount} ${selectedActivity.price.currencyCode}`}
+                            </div>
+                            {/* Description */}
+                            <div
+                            style={{
+                                color: "#4B5A75",
+                                fontSize: "0.87rem",
+                                maxHeight: "45px",
+                                overflow: "hidden",
+                                marginBottom: "2px",
+                                textAlign: "left",
+                            }}
+                            title={selectedActivity.description?.replace(/(<([^>]+)>)/gi, "")}
+                            dangerouslySetInnerHTML={{
+                                __html: selectedActivity.description
+                                ? selectedActivity.description.replace(/(<([^>]+)>)/gi, "")?.slice(0, 68) + "..."
+                                : "",
+                            }}
+                            />
+                            {/* Book Button */}
+                            <a
+                            href={selectedActivity.bookingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                marginTop: "3px",
+                                background: "linear-gradient(90deg, #2270e2 0%, #40edc7 100%)",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "5px",
+                                padding: "6px 16px",
+                                fontWeight: 600,
+                                fontSize: "0.98rem",
+                                textDecoration: "none",
+                                boxShadow: "0 1px 4px rgba(40,110,160,0.10)",
+                                cursor: "pointer",
+                                textAlign: "center",
+                            }}
+                            >
+                            Book
+                            </a>
+                        </div>
+                    </InfoWindow>
                 )}
             </GoogleMap>
         </Box>

@@ -49,7 +49,8 @@ const DEFAULT_COORDINATES = {
 };
 
 // Google Maps API Key
-const GOOGLE_MAPS_API_KEY = 'AIzaSyC0DU0EE254dfgrw_TWxrBgmslLTnFUv4M';
+// const GOOGLE_MAPS_API_KEY = 'AIzaSyC0DU0EE254dfgrw_TWxrBgmslLTnFUv4M';
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 
 const ActivitiesScreen: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -182,6 +183,7 @@ const ActivitiesScreen: React.FC = () => {
 
       if (items.length === 0 && !isFallback) {
         setUsingDefaultLocation(true);
+        setLocation(DEFAULT_COORDINATES);
         await fetchActivities(DEFAULT_COORDINATES, isRefreshing, true);
         return;
       }
@@ -201,6 +203,7 @@ const ActivitiesScreen: React.FC = () => {
 
       if (!isFallback) {
         setUsingDefaultLocation(true);
+        setLocation(DEFAULT_COORDINATES);
         await fetchActivities(DEFAULT_COORDINATES, isRefreshing, true);
       } else {
         setError(errorMessage);
@@ -241,6 +244,7 @@ const ActivitiesScreen: React.FC = () => {
       fetchActivities(coords, isRefreshing, false);
     } catch (err) {
       setUsingDefaultLocation(true);
+      setLocation(DEFAULT_COORDINATES);
       fetchActivities(DEFAULT_COORDINATES, isRefreshing, true);
     }
   };
