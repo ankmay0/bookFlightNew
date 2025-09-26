@@ -295,7 +295,7 @@ const ChatBot: React.FC = () => {
     return activities;
   };
 
-  const handleSend = async () => {
+  const handleSend = async (userInput?: string) => {
     if (input.trim() === "") {
       setMessages((prev) => [
         ...prev,
@@ -304,7 +304,7 @@ const ChatBot: React.FC = () => {
       return;
     }
 
-    const userMessage: Message = { role: "user", text: input };
+    const userMessage: Message = { role: "user", text: userInput || input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -740,6 +740,7 @@ const ChatBot: React.FC = () => {
               }
             }}
           >
+             <Button onClick={() => handleSend("show me activities near me")}>Activities near me</Button>
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -872,7 +873,7 @@ const ChatBot: React.FC = () => {
               }}
             />
             <button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={loading}
               aria-label="Send message"
               style={{
