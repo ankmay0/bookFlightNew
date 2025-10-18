@@ -5,6 +5,7 @@ import { AirplanemodeActive as AirplaneIcon } from "@mui/icons-material";
 import FlightCardsContainerChatBot from "./FlightCardContainerChatBot";
 import ActivityCardChatBot from "./ActivityCardChatBot";
 import ActivitiesMap from "./ActivitiesMap";
+import { Console } from "console";
 
 interface FlightParams {
   origin: string;
@@ -124,13 +125,15 @@ const ChatBot: React.FC = () => {
     try {
       const url = `http://127.0.0.1:8080/flights/search?originLocationCode=${flightParams.origin}&destinationLocationCode=${flightParams.destination}&departureDate=${flightParams.date}&adults=${flightParams.adults || 1}&infants=0&travelClass=ECONOMY&currencyCode=INR&max=3`;
       const flightRes = await fetch(url);
-      
+
+
       if (!flightRes.ok) {
         throw new Error("Flight API failed");
       }
 
       const flightData = await flightRes.json();
-      
+      console.log(flightData);
+
       return flightData.map((flight: any) => ({
         totalPrice: String(flight.totalPrice || flight.basePrice || "0"),
         currencyCode: flight.currencyCode || "INR",
@@ -234,7 +237,7 @@ const ChatBot: React.FC = () => {
   // Fetch activities data
   const fetchActivities = async (activityParams: ActivityParams): Promise<{ activities: Activity[], coords: { latitude: number; longitude: number } }> => {
     let coords = { latitude: 51.5074, longitude: -0.1278 }; // Default: London
-    
+
     if (activityParams.location === "current location") {
       try {
         coords = await new Promise((resolve, reject) => {
@@ -296,12 +299,9 @@ const ChatBot: React.FC = () => {
       }));
       const apiUserMessage = { role: userMessage.role, content: userMessage.text };
 
-      // Step 1: Call backend LLM service
       const response = await fetch("http://localhost:8000", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [
@@ -312,47 +312,58 @@ const ChatBot: React.FC = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
       const data = await response.json();
       console.log("Backend response:", JSON.stringify(data, null, 2));
-      
-      const botTextRaw = data.choices?.[0]?.message?.content;
-      const botText = typeof botTextRaw === "string" ? botTextRaw : "⚠️ Invalid response from server";
-      const flightParams: FlightParams | undefined = data.choices?.[0]?.message?.flight_params;
-      const activityParams: ActivityParams | undefined = data.choices?.[0]?.message?.activity_params;
-      
+
+      const botMessageData = data.choices?.[0]?.message;
+      const botText = botMessageData?.content || "⚠️ Invalid response from server";
+      const flightParams = botMessageData?.flight_params;
+      const missingFields = botMessageData?.missing_fields || [];
+      const activityParams = botMessageData?.activity_params;
+
+      // 🧩 Handle missing flight fields - don't proceed with API calls
+      // In your handleSend function, after receiving the response:
+      if (missingFields && missingFields.length > 0) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: botText,
+            flightParams: flightParams, // This now contains accumulated params
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
+
       let flights: Flight[] = [];
       let activities: Activity[] = [];
       let resolvedCoords: { latitude: number; longitude: number } | undefined;
 
-      // Step 2: Fetch flights if flight parameters are provided
-      if (flightParams) {
-        if (!flightParams.origin || !flightParams.destination || !flightParams.date) {
-          throw new Error("Incomplete flight parameters");
-        }
-        
+      // 🛫 Only fetch flights if we have complete parameters
+      if (flightParams && flightParams.origin && flightParams.destination && flightParams.date) {
         flights = await fetchFlights(flightParams);
-      } 
-      // Step 3: Fetch activities if activity parameters are provided
+      }
+
+      // 🎯 Handle activities
       else if (activityParams) {
         const activityResult = await fetchActivities(activityParams);
         activities = activityResult.activities;
         resolvedCoords = activityResult.coords;
       }
 
-      // Step 4: Create bot message with results
+      // 🗣️ Build and show bot response
       const botMessage: Message = {
         role: "assistant",
-        text: flights.length > 0 ? "Here are the available flights:" : activities.length > 0 ? "Here are the available activities:" : botText,
-        flightParams,
+        text: botText,
+        flightParams: flights.length > 0 ? flightParams : undefined,
         flights: flights.length > 0 ? flights : undefined,
         activityParams: resolvedCoords ? { coords: resolvedCoords } : undefined,
         activities: activities.length > 0 ? activities : undefined,
       };
-      
+
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Chat error:", error);
@@ -365,6 +376,8 @@ const ChatBot: React.FC = () => {
       setLoading(false);
     }
   };
+
+
 
   const handleSeeMore = (flightParams?: FlightParams) => {
     if (!flightParams) {
@@ -510,7 +523,7 @@ const ChatBot: React.FC = () => {
             }}
           >
             <Button onClick={() => handleSend("show me activities near me")}>Activities near me</Button>
-            
+
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -571,7 +584,7 @@ const ChatBot: React.FC = () => {
                 )}
               </div>
             ))}
-            
+
             {loading && (
               <div
                 style={{
@@ -596,7 +609,7 @@ const ChatBot: React.FC = () => {
                 </Box>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
